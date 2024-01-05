@@ -1798,6 +1798,15 @@ if(CONFIG_BUILD_OUTPUT_INFO_HEADER)
     )
 endif()
 
+if (CONFIG_LLEXT AND CONFIG_LLEXT_NID_LINKING)
+  #NIDgen must be the first post-build command to run to ensure
+  #that all other post-build commands operate on the NIDgen'ed executable
+  list(PREPEND
+    post_build_commands
+    COMMAND ${PYTHON_EXECUTABLE} ${ZEPHYR_BASE}/scripts/build/nidgen.py -f ${PROJECT_BINARY_DIR}/${KERNEL_ELF_NAME}
+  )
+endif()
+
 if(NOT CMAKE_C_COMPILER_ID STREQUAL "ARMClang")
   set(check_init_priorities_input
       $<IF:$<TARGET_EXISTS:native_runner_executable>,${BYPRODUCT_KERNEL_EXE_NAME},${BYPRODUCT_KERNEL_ELF_NAME}>

@@ -34,6 +34,16 @@ config LLEXT_STORAGE_WRITABLE
 	  Select if LLEXT storage is writable, i.e. if extensions are stored in
 	  RAM and can be modified in place
 
+config LLEXT_NID_LINKING
+	bool "link LLEXTs to Zephyr kernel via NIDs"
+	default false
+	help
+	  When enabled, linking between LLEXTs and the Zephyr kernel is performed
+	  using Numeric Identifiers (NIDs) instead of symbol name. This reduces
+	  the final binary size and improves linking speed.
+
+	  See nidgen.py for more details.
+
 module = LLEXT
 module-str = llext
 source "subsys/logging/Kconfig.template.log_config"

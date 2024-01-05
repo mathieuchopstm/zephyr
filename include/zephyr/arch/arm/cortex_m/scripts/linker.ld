@@ -486,4 +486,10 @@ SECTION_PROLOGUE(.last_section,,)
  * calculate this value here. */
 _flash_used = LOADADDR(.last_section) + SIZEOF(.last_section) - __rom_region_start;
 
+/* LLEXT */
+    SECTION_PROLOGUE(llext_exports_strtab, 0 (COPY),)
+	{
+	KEEP(*(llext_exports_strtab))
+	}
+
     }

@@ -5122,12 +5122,20 @@ function(add_llext_target target_name)
     zephyr_generated_headers
   )
 
+  #NIDGEN
+  set(NIDGEN_cmd_list "")
+  list(APPEND NIDGEN_cmd_list
+    COMMAND ${CROSS_COMPILE}strip --strip-unneeded $<TARGET_OBJECTS:${target_name}_lib>
+    COMMAND ${PYTHON_EXECUTABLE} ${ZEPHYR_BASE}/scripts/build/nidgen.py -f $<TARGET_OBJECTS:${target_name}_lib>
+  )
+
   # Arch-specific conversion of the object file to an llext
   if(CONFIG_ARM)
 
     # No conversion required, simply copy the object file
     add_custom_command(
       OUTPUT ${output_file}
+      ${NIDGEN_cmd_list}
       COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_OBJECTS:${target_name}_lib> ${output_file}
       DEPENDS ${target_name}_lib $<TARGET_OBJECTS:${target_name}_lib>
     )

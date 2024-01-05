@@ -16,11 +16,22 @@
 
 extern void printk(char *fmt, ...);
 
-static const uint32_t number = 42;
+__attribute__((used))
+static const uint32_t static_const = 1; /* .text, file-local linkage */
 
-void hello_world(void)
+__attribute__((used))
+static uint32_t static_var = 2;         /* .data, file-local linkage */
+
+__attribute__((used))
+static uint32_t static_bss; /* = 3 */          /* .bss,  file-local linkage */
+
+const uint32_t global_const = 4;        /* .text, global linkage */
+uint32_t global_var = 5;                /* .data, global linkage */
+uint32_t global_bss; /* = 6 */          /* .bss,  global linkage */
+
+extern void hello_world(void)
 {
 	printk("hello world\n");
-	printk("A number is %lu\n", number);
+	printk("A number is %lu\n", global_var);
 }
 LL_EXTENSION_SYMBOL(hello_world);

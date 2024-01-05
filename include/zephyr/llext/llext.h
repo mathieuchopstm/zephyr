@@ -159,6 +159,10 @@ int llext_unload(struct llext **ext);
  *
  * @retval NULL if no symbol found
  * @retval addr Address of symbol in memory if found
+ *
+ * @note if CONFIG_LLEXT_NID_LINKING is true, searching for exports in the
+ * base table must be performed by passing a NID casted to (const char*) as
+ * the sym_name parameter, instead of a string containing the symbol's name.
  */
 const void * const llext_find_sym(const struct llext_symtable *sym_table, const char *sym_name);
 

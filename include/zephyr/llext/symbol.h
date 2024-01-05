@@ -10,6 +10,7 @@
 #include <zephyr/sys/iterable_sections.h>
 #include <zephyr/toolchain.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,8 +30,13 @@ extern "C" {
  * as they may be placed in ROM.
  */
 struct llext_const_symbol {
-	/** Name of symbol */
-	const char *const name;
+	union {
+		/** Name of symbol */
+		const char *const name;
+
+		/** Numeric identifier of symbol */
+		const uintptr_t nid;
+	};
 
 	/** Address of symbol */
 	const void *const addr;
@@ -74,10 +80,20 @@ struct llext_symtable {
  *
  * @param x Symbol to export
  */
+#if CONFIG_LLEXT_NID_LINKING
+#define EXPORT_SYMBOL(x)							\
+	static const char Z_GENERIC_SECTION("llext_exports_strtab") __used	\
+		x ## _sym_name[] = STRINGIFY(x);				\
+	static const STRUCT_SECTION_ITERABLE(llext_const_symbol, x ## _sym) = {	\
+		.name = x ## _sym_name, .addr = &x,				\
+	}
+#else
 #define EXPORT_SYMBOL(x)							\
 	static const STRUCT_SECTION_ITERABLE(llext_const_symbol, x ## _sym) = {	\
 		.name = STRINGIFY(x), .addr = &x,				\
 	}
+
+#endif
 
 #define LL_EXTENSION_SYMBOL(x)							\
 	struct llext_symbol Z_GENERIC_SECTION(".exported_sym") __used		\

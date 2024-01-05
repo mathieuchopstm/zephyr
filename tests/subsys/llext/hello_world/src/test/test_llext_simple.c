@@ -46,15 +46,24 @@ ZTEST(llext, test_llext_simple)
 	struct llext_loader *loader = &buf_loader.loader;
 	struct llext_load_param ldr_parm = LLEXT_LOAD_PARAM_DEFAULT;
 	struct llext *ext = NULL;
-	const void * const printk_fn = llext_find_sym(NULL, "printk");
 
+#if !CONFIG_LLEXT_NID_LINKING
+	const void *const printk_fn = llext_find_sym(NULL, "printk");
+#else
+#if CONFIG_64BIT
+	const char *printk_nid = (const char *)(0x87B3105268827052ull);
+#else
+	const char *printk_nid = (const char *)(0x87B31052ull);
+#endif
+	const void *const printk_fn = llext_find_sym(NULL, printk_nid);
+#endif
 	zassert_equal(printk_fn, printk, "printk should be an exported symbol");
 
 	int res = llext_load(loader, name, &ext, &ldr_parm);
 
 	zassert_ok(res, "load should succeed");
 
-	const void * const hello_world_fn = llext_find_sym(&ext->exp_tab, "hello_world");
+	const void *const hello_world_fn = llext_find_sym(&ext->exp_tab, "hello_world");
 
 	zassert_not_null(hello_world_fn, "hello_world should be an exported symbol");
 

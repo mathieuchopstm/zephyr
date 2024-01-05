@@ -109,13 +109,25 @@ int llext_iterate(int (*fn)(struct llext *ext, void *arg), void *arg)
 
 const void * const llext_find_sym(const struct llext_symtable *sym_table, const char *sym_name)
 {
+	LOG_DBG("sym_table = %p; sym_name = %p (%s)\n", sym_table, sym_name, sym_name);
 	if (sym_table == NULL) {
-		/* Built-in symbol table */
+		/* Built-in symbol table search */
+#if CONFIG_LLEXT_NID_LINKING
+		/* TODO: use a dichotomic search algorithm to improve linking speed */
+		uintptr_t sym_nid = (uintptr_t)sym_name;
+
+		STRUCT_SECTION_FOREACH(llext_const_symbol, sym) {
+			if (sym->nid == sym_nid) {
+				return sym->addr;
+			}
+		}
+#else
 		STRUCT_SECTION_FOREACH(llext_const_symbol, sym) {
 			if (strcmp(sym->name, sym_name) == 0) {
 				return sym->addr;
 			}
 		}
+#endif
 	} else {
 		/* find symbols in module */
 		for (size_t i = 0; i < sym_table->sym_cnt; i++) {
@@ -756,10 +768,15 @@ static int llext_link(struct llext_loader *ldr, struct llext *ext, bool do_local
 
 			op_loc = loc + rel.r_offset;
 
-			/* If symbol is undefined, then we need to look it up */
-			if (sym.st_shndx == SHN_UNDEF) {
-				link_addr = (uintptr_t)llext_find_sym(NULL, name);
-
+				/* If symbol is undefined, then we need to look it up */
+				if (sym.st_shndx == SHN_UNDEF) {
+#if CONFIG_LLEXT_NID_LINKING
+					link_addr = (uintptr_t)llext_find_sym(
+						NULL, (const char *)(sym.st_value)
+					);
+#else
+					link_addr = (uintptr_t)llext_find_sym(NULL, name);
+#endif
 				if (link_addr == 0) {
 					LOG_ERR("Undefined symbol with no entry in "
 						"symbol table %s, offset %d, link section %d",
