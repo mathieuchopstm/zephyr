@@ -1,0 +1,23 @@
+# Copyright (c) 2024 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+    STM32 family TEMP node for production calibrated sensors like STM32WB0,
+    which have a sensor value and a chuck temperature.
+
+compatible: "st,stm32wb0-temp-cal"
+
+include:
+  - name: st,stm32-temp-cal-common.yaml
+    property-blocklist:
+      - ts-cal1-temp
+
+properties:
+  nvmem-cell-names:
+    description: |
+      Two NVMEM cells must be provided: C30 and TCK
+
+      These cells correspond to the eponymous calibration parameters.
+    enum: ["C30", "TCK"]
+    min-len: 2
+    max-len: 2
