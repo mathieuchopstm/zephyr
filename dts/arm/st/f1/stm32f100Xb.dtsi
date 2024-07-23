@@ -51,5 +51,10 @@
 			status = "disabled";
 			#io-channel-cells = <1>;
 		};
+
+		die_temp: dietemp {
+			/delete-property/ v25;
+			v25 = <1410>;
+		};
 	};
 };
