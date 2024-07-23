@@ -9,10 +9,10 @@ include: [base.yaml, "st,stm32-temp-common.yaml"]
 
 properties:
   avgslope:
-    type: int
-    default: 25
+    type: string
+    required: true
     description: |
-      Average slope of T-V chart (in mV/°C, x10), found in MCU datasheet
+      Average slope of T-V chart (in mV/°C), found in MCU datasheet
       chapters "Electrical characteristics" or "Operating conditions"
 
       For STM32F1 series:
@@ -39,7 +39,7 @@ properties:
 
   v25:
     type: int
-    default: 760
+    required: true
     description: |
       Voltage of temperature sensor at 25°C (in mV), found in MCU datasheet
       chapters "Electrical characteristics" or "Operating conditions"
