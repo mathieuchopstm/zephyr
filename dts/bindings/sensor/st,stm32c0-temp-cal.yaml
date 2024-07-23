@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 description: |
-    STM32 family TEMP node for production calibrated sensors like C0
-    with a single calibration temperature.
+    STM32 family TEMP node for production calibrated sensors with a single calibration temperature.
 
 compatible: "st,stm32c0-temp-cal"
 
@@ -14,10 +13,16 @@ properties:
     type: int
     default: 2530
     description: |
-      Average slope of T-V chart (in uV/C) according to
-      datasheet "Electrical characteristics/Operating conditions"
-      STM32C0 Table 5.3.16 (min 2400 uV/C, max 2650, typ: 2530)
+      Average slope of T-V chart (in µV/°C), found in MCU datasheet
+      chapters "Electrical characteristics" or "Operating conditions"
+      (multiply datasheet value by 1000 to convert from mV/°C to µV/°C)
 
-  ntc:
-    type: boolean
-    description: Negative Temperature Coefficient. True if STM32F0x0
+      For STM32C0 series: typical value of 2.53 mV/°C (min 2.4; max 2.65)
+        - STM32C011x4 / STM32C011x6 (DS13866 Table 5.3.16)
+        - STM32C031x4 / STM32C031x6 (DS13867 Table 5.3.16)
+
+      For STM32F030/STM32F070 lines: typical value of 4.3 mV/°C,
+         minimum value of 4.0 mV/°C, maximum value of 4.6 mV/°C
+        - STM32F030xx (DS9773 Table 6.3.17)
+        - STM32F070xx (DS10697 Table 6.3.17)
+

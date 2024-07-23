@@ -12,20 +12,58 @@ properties:
     type: int
     default: 25
     description: |
-      Average slope of T-V chart (in mV/C x10) according to
-      datasheet "Electrical characteristics/Operating conditions"
-      STM32F1 Table 5.3.19 (min 4 mV/C, max 4.6, default 4.3)
-      STM32F4 Table 6.3.21 default 2.5
+      Average slope of T-V chart (in mV/°C, x10), found in MCU datasheet
+      chapters "Electrical characteristics" or "Operating conditions"
+
+      For STM32F1 series:
+        - Typical value of 4.3 mV/°C (min 4.0; max 4.6) for most lines
+          - STM32F100x4 / STM32F100x6 / STM32F100x8 / STM32F100xB (DS6517 Table 5.3.19)
+          - STM32F100xC / STM32F100xD / STM32F100xE (DS5944 Table 5.3.20)
+          - STM32F101x4 / STM32F101x6 (DS5935 Table 5.3.18)
+          - STM32F101x8 / STM32F101xB (DS5318 Table 5.3.18)
+          - STM32F101xC / STM32F101xD / STM32F101xE (DS5791 Table 5.3.20)
+          - STM32F101xF / STM32F101xG (DS6557 Table 5.3.20)
+          - STM32F103x4 / STM32F103x6 (DS5936 Table 5.3.19)
+          - STM32F103x8 / STM32F103xB (DS5319 Table 5.3.19)
+          - STM32F103xC / STM32F103xD / STM32F103xE (DS5792 Table 5.3.21)
+          - STM32F103xF / STM32F103xG (DS6558 Table 5.3.21)
+          - STM32F105xx / STM32F107xx (DS6014 Table 5.3.19)
+
+          - Typical value of 4.35 mV/°C (no min/max) for STM32F102 line
+            - STM32F102x4 / STM32F102x6 (DS5934 Table 5.3.18)
+            - STM32F102x8 / STM32F102xB (DS5933 Table 5.3.18)
+
+      For STM32F2 series: typical value of 2.5 mV/°C
+        - STM32F20xxx (DS6329 Table 6.3.22)
+        - STM32F215xx / STM32217xx (DS6697 Table 6.3.22)
 
   v25:
     type: int
     default: 760
     description: |
-      Voltage of temperature sensor at 25C in mV according to
-      datasheet "Electrical characteristics/Operating conditions"
-      STM32F1 Table 5.3.19 (min 1340, max 1520, default 1430)
-      STM32F4 Table 6.3.21 default 760
+      Voltage of temperature sensor at 25°C (in mV), found in MCU datasheet
+      chapters "Electrical characteristics" or "Operating conditions"
 
-  ntc:
-    type: boolean
-    description: Negative Temperature Coefficient. True if STM32F1
+      For STM32F1 series:
+        - Typical value of 1.43 V (min 1.34; max 1.52) for most lines
+          - STM32F101x4 / STM32F101x6 (DS5935 Table 5.3.18)
+          - STM32F101x8 / STM32F101xB (DS5318 Table 5.3.18)
+          - STM32F101xC / STM32F101xD / STM32F101xE (DS5791 Table 5.3.20)
+          - STM32F101xF / STM32F101xG (DS6557 Table 5.3.20)
+          - STM32F103x4 / STM32F103x6 (DS5936 Table 5.3.19)
+          - STM32F103x8 / STM32F103xB (DS5319 Table 5.3.19)
+          - STM32F103xC / STM32F103xD / STM32F103xE (DS5792 Table 5.3.21)
+          - STM32F103xF / STM32F103xG (DS6558 Table 5.3.21)
+          - STM32F105xx / STM32F107xx (DS6014 Table 5.3.19)
+
+        - Typical value of 1.41 V (min 1.32; max 1.50) for STM32F100 line
+          - STM32F100x4 / STM32F100x6 / STM32F100x8 / STM32F100xB (DS6517 Table 5.3.19)
+          - STM32F100xC / STM32F100xD / STM32F100xE (DS5944 Table 5.3.20)
+
+        - Typical value of 1.42 V (no min/max) for STM32F102 line
+          - STM32F102x4 / STM32F102x6 (DS5934 Table 5.3.18)
+          - STM32F102x8 / STM32F102xB (DS5933 Table 5.3.18)
+
+      For STM32F2 series: typical value of 0.76 V (760 mV)
+        - STM32F20xxx (DS6329 Table 6.3.22)
+        - STM32F215xx / STM32217xx (DS6697 Table 6.3.22)
