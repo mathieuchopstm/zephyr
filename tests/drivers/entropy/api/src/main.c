@@ -22,7 +22,7 @@
  * @}
  */
 
-#define BUFFER_LENGTH           10
+#define BUFFER_LENGTH           1000
 #define RECHECK_RANDOM_ENTROPY  0x10
 
 #ifdef CONFIG_RANDOM_BUFFER_NOCACHED
@@ -45,8 +45,8 @@ static int random_entropy(const struct device *dev, char *buffer, char num)
 	 * outside the passed buffer, and that should never
 	 * happen.
 	 */
-	ret = entropy_get_entropy(dev, buffer, BUFFER_LENGTH - 1);
-	if (ret) {
+	ret = entropy_get_entropy_isr(dev, buffer, BUFFER_LENGTH - 1, ENTROPY_BUSYWAIT);
+	if (ret < 0) {
 		TC_PRINT("Error: entropy_get_entropy failed: %d\n", ret);
 		return TC_FAIL;
 	}
@@ -56,11 +56,16 @@ static int random_entropy(const struct device *dev, char *buffer, char num)
 	}
 
 	for (i = 0; i < BUFFER_LENGTH - 1; i++) {
-		TC_PRINT("  0x%02x\n", buffer[i]);
+		TC_PRINT(" 0x%02x", buffer[i]);
+		if ((i+1) % 16 == 0) {
+			TC_PRINT("\n");
+		}
 		if (buffer[i] == num) {
 			count++;
 		}
 	}
+
+	TC_PRINT("\n");
 
 	if (count >= 2) {
 		return RECHECK_RANDOM_ENTROPY;
