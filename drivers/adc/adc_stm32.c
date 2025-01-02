@@ -1570,7 +1570,17 @@ static int adc_stm32_init(const struct device *dev)
 #elif defined(CONFIG_SOC_SERIES_STM32H7X) || \
 	defined(CONFIG_SOC_SERIES_STM32U5X) || \
 	defined(CONFIG_SOC_SERIES_STM32WBAX)
-	while (LL_ADC_IsActiveFlag_LDORDY(adc) == 0) {
+
+	/**
+	 * STM32H742, STM32H743/753, STM32H750:			(DEV_ID 0x450)
+	 * ADC LDORDY bit is only available on revision V	(REV_ID 0x2003)
+	 */
+	if (!IS_ENABLED(CONFIG_SOC_SERIES_STM32H7X) ||
+		((LL_DBGMCU_GetDeviceID() == 0x450) && (LL_DBGMCU_GetRevisionID() == 0x2003))) {
+		while (LL_ADC_IsActiveFlag_LDORDY(adc) == 0) {
+		}
+	} else {
+		k_busy_wait(LL_ADC_DELAY_INTERNAL_REGUL_STAB_US);
 	}
 #else
 	k_busy_wait(LL_ADC_DELAY_INTERNAL_REGUL_STAB_US);

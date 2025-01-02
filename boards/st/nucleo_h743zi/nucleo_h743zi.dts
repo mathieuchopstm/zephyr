@@ -164,6 +164,14 @@ zephyr_udc0: &usbotg_fs {
 	pinctrl-names = "default";
 	st,adc-clock-source = "SYNC";
 	st,adc-prescaler = <4>;
+
+	resolutions = <STM32_ADC_RES(16, 0x00)
+		       STM32_ADC_RES(14, 0x01)
+		       STM32_ADC_RES(12, 0x02)
+		       STM32_ADC_RES(10, 0x03)
+		       STM32_ADC_RES(8, 0x07)>;
+
+
 	status = "okay";
 };
 
