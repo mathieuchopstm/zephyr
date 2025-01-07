@@ -33,7 +33,34 @@
 		cpu0: cpu@0 {
 			device_type = "cpu";
 			compatible = "arm,cortex-m0+";
+			cpu-power-states = <&deepstop>;
 			reg = <0>;
+		};
+
+		power-states {
+			deepstop: state0 {
+				compatible = "zephyr,power-state";
+				power-state-name = "suspend-to-ram";
+				substate-id = <0>;
+
+				/* TODO: how should this be calculated?
+				 *
+				 * The RTC wake-up timer cannot count less than 122µs,
+				 * and PM takes exit-latency into account(?), so this
+				 * should be at least (122+170=) 292, but are these
+				 * other things to take into account?
+				 *
+				 * One second seems reasonable for now.
+				 */
+				min-residency-us = <1000>;
+
+				/**
+				 * tWUDEEPSTOP value from datasheets:
+				 *  STM32WB06/WB07: typ. 110µs
+				 *  STM32WB05/WB09: typ. 170µs
+				 */
+                                exit-latency-us = <170>;
+			};
 		};
 	};
 
