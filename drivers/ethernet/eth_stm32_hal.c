@@ -54,16 +54,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #error DTCM for DMA buffer is activated but zephyr,dtcm is not present in dts
 #endif
 
-#define PHY_ADDR	CONFIG_ETH_STM32_HAL_PHY_ADDRESS
-
-#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_mdio)
-
-#define DEVICE_PHY_BY_NAME(n) \
-	    DEVICE_DT_GET(DT_CHILD(DT_INST_CHILD(n, mdio), _CONCAT(ethernet_phy_, PHY_ADDR)))
-
-static const struct device *eth_stm32_phy_dev = DEVICE_PHY_BY_NAME(0);
-
-#endif
+#define INST_PHY(inst)	DT_INST_PHANDLE(inst, phy_handle)
 
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32h7_ethernet)
 
@@ -233,21 +224,6 @@ static inline struct eth_stm32_tx_context *allocate_tx_context(struct net_pkt *p
 #if defined(CONFIG_ETH_STM32_HAL_API_V2)
 static ETH_TxPacketConfig tx_config;
 #endif
-
-static HAL_StatusTypeDef read_eth_phy_register(ETH_HandleTypeDef *heth,
-						uint32_t PHYAddr,
-						uint32_t PHYReg,
-						uint32_t *RegVal)
-{
-#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_mdio)
-	return phy_read(eth_stm32_phy_dev, PHYReg, RegVal);
-#elif defined(CONFIG_ETH_STM32_HAL_API_V2)
-	return HAL_ETH_ReadPHYRegister(heth, PHYAddr, PHYReg, RegVal);
-#else
-	ARG_UNUSED(PHYAddr);
-	return HAL_ETH_ReadPHYRegister(heth, PHYReg, RegVal);
-#endif /* CONFIG_ETH_STM32_HAL_API_V2 */
-}
 
 static inline void setup_mac_filter(ETH_HandleTypeDef *heth)
 {
@@ -702,13 +678,12 @@ out:
 
 static void rx_thread(void *arg1, void *unused1, void *unused2)
 {
-	const struct device *dev;
+	const struct device *dev, *phy;
 	struct eth_stm32_hal_dev_data *dev_data;
 	struct net_if *iface;
 	struct net_pkt *pkt;
 	int res;
 	uint32_t status;
-	HAL_StatusTypeDef hal_ret = HAL_OK;
 
 	__ASSERT_NO_MSG(arg1 != NULL);
 	ARG_UNUSED(unused1);
@@ -718,6 +693,8 @@ static void rx_thread(void *arg1, void *unused1, void *unused2)
 	dev_data = dev->data;
 
 	__ASSERT_NO_MSG(dev_data != NULL);
+
+	phy = net_eth_get_phy(get_iface(dev_data));
 
 	while (1) {
 		res = k_sem_take(&dev_data->rx_int_sem,
@@ -744,9 +721,8 @@ static void rx_thread(void *arg1, void *unused1, void *unused2)
 			}
 		} else if (res == -EAGAIN) {
 			/* semaphore timeout period expired, check link status */
-			hal_ret = read_eth_phy_register(&dev_data->heth,
-				    PHY_ADDR, PHY_BSR, (uint32_t *) &status);
-			if (hal_ret == HAL_OK) {
+			res = phy_read(phy, PHY_BSR, &status);
+			if (res == 0) {
 				if ((status & PHY_LINKED_STATUS) == PHY_LINKED_STATUS) {
 					if (dev_data->link_up != true) {
 						dev_data->link_up = true;
@@ -1270,6 +1246,13 @@ static struct net_stats_eth *eth_stm32_hal_get_stats(const struct device *dev)
 }
 #endif /* CONFIG_NET_STATISTICS_ETHERNET */
 
+static const struct device *eth_stm32_get_phy(const struct device *dev)
+{
+	const struct eth_stm32_hal_dev_cfg *cfg = dev->config;
+
+	return cfg->phy;
+}
+
 static const struct ethernet_api eth_api = {
 	.iface_api.init = eth_iface_init,
 #if defined(CONFIG_PTP_CLOCK_STM32_HAL)
@@ -1285,6 +1268,7 @@ static const struct ethernet_api eth_api = {
 #if defined(CONFIG_NET_STATISTICS_ETHERNET)
 	.get_stats = eth_stm32_hal_get_stats,
 #endif /* CONFIG_NET_STATISTICS_ETHERNET */
+	.get_phy = eth_stm32_get_phy,
 };
 
 static void eth0_irq_config(void)
@@ -1309,11 +1293,12 @@ static const struct eth_stm32_hal_dev_cfg eth0_config = {
 		       .enr = DT_INST_CLOCKS_CELL_BY_NAME(0, mac_clk_ptp, bits)},
 #endif
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(0),
+	.phy = DEVICE_DT_GET(INST_PHY(0)),
 };
 
 static struct eth_stm32_hal_dev_data eth0_data = {
 	.heth = {
-		.Instance = (ETH_TypeDef *)DT_INST_REG_ADDR(0),
+		.Instance = (ETH_TypeDef *)DT_REG_ADDR(DT_INST_PARENT(0)),
 		.Init = {
 #if !defined(CONFIG_ETH_STM32_HAL_API_V2)
 #if defined(CONFIG_ETH_STM32_AUTO_NEGOTIATION_ENABLE)
@@ -1325,7 +1310,7 @@ static struct eth_stm32_hal_dev_data eth0_data = {
 			.DuplexMode = IS_ENABLED(CONFIG_ETH_STM32_MODE_HALFDUPLEX) ?
 				      ETH_MODE_HALFDUPLEX : ETH_MODE_FULLDUPLEX,
 #endif /* !CONFIG_ETH_STM32_AUTO_NEGOTIATION_ENABLE */
-			.PhyAddress = PHY_ADDR,
+			.PhyAddress = DT_REG_ADDR(INST_PHY(0)),
 			.RxMode = ETH_RXINTERRUPT_MODE,
 			.ChecksumMode = IS_ENABLED(CONFIG_ETH_STM32_HW_CHECKSUM) ?
 					ETH_CHECKSUM_BY_HARDWARE : ETH_CHECKSUM_BY_SOFTWARE,
