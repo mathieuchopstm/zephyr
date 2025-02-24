@@ -1,0 +1,14 @@
+# Copyright (c) 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+config MDIO_ETHBULITIN_STM32
+	bool
+	default y
+	depends on ETH_STM32_HAL
+	depends on DT_HAS_ST_STM32_ETHERNET_MDIO_ENABLED
+	select PINCTRL
+	help
+	  Enable support for the MDIO controller built inside the STM32 Ethernet IP.
+
+	  Since this MDIO controller is dedicated for usage by the STM32 Ethernet IP,
+	  the symbol is hidden as this prevents it from being manually enabled.
