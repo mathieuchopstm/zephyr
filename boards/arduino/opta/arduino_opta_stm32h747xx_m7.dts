@@ -108,6 +108,7 @@ zephyr_udc0: &usbotg_fs {
 	>;
 	pinctrl-names = "default";
 	status = "okay";
+	phy-handle = <&eth_phy>;
 };
 
 &mdio {
@@ -115,7 +116,7 @@ zephyr_udc0: &usbotg_fs {
 	pinctrl-names = "default";
 	status = "okay";
 
-	ethernet-phy@0 {
+	eth_phy: ethernet-phy@0 {
 		compatible = "ethernet-phy";
 		reg = <0x00>;
 		status = "okay";
