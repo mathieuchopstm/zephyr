@@ -22,7 +22,7 @@
  * @}
  */
 
-#define BUFFER_LENGTH           10
+#define BUFFER_LENGTH           1024
 #define RECHECK_RANDOM_ENTROPY  0x10
 
 #ifdef CONFIG_RANDOM_BUFFER_NOCACHED
@@ -32,6 +32,17 @@ static uint8_t entropy_buffer[BUFFER_LENGTH] = {0};
 static uint8_t entropy_buffer[BUFFER_LENGTH] = {0};
 #endif
 
+#define USE_ISR 1
+
+int ege_wrp(const struct device *dev, void *buffer, uint32_t len)
+{
+	if (USE_ISR) {
+		return entropy_get_entropy_isr(dev, buffer, len, ENTROPY_BUSYWAIT);
+	} else {
+		return entropy_get_entropy(dev, buffer, len);
+	}
+}
+
 static int random_entropy(const struct device *dev, char *buffer, char num)
 {
 	int ret, i;
@@ -39,15 +50,21 @@ static int random_entropy(const struct device *dev, char *buffer, char num)
 
 	(void)memset(buffer, num, BUFFER_LENGTH);
 
+	uint64_t pre = k_cycle_get_64();
+
 	/* The BUFFER_LENGTH-1 is used so the driver will not
 	 * write the last byte of the buffer. If that last
 	 * byte is not 0 on return it means the driver wrote
 	 * outside the passed buffer, and that should never
 	 * happen.
 	 */
-	ret = entropy_get_entropy(dev, buffer, BUFFER_LENGTH - 1);
-	if (ret) {
-		TC_PRINT("Error: entropy_get_entropy failed: %d\n", ret);
+	ret = ege_wrp(dev, buffer, BUFFER_LENGTH - 1);
+
+	uint64_t post = k_cycle_get_64();
+
+	if (ret < 0) {
+		TC_PRINT("Error: entropy_get_entropy%s failed: %d\n",
+			USE_ISR ? "_isr" : "", ret);
 		return TC_FAIL;
 	}
 	if (buffer[BUFFER_LENGTH - 1] != num) {
@@ -55,14 +72,23 @@ static int random_entropy(const struct device *dev, char *buffer, char num)
 		return TC_FAIL;
 	}
 
+	uint64_t time = k_cyc_to_ns_floor64(post - pre);
+
+	TC_PRINT("Buffer of size %u filled in %llu ns (%llu ns/byte)\n",
+		BUFFER_LENGTH - 1, time, time / (BUFFER_LENGTH - 1));
+
 	for (i = 0; i < BUFFER_LENGTH - 1; i++) {
-		TC_PRINT("  0x%02x\n", buffer[i]);
+		TC_PRINT("  0x%02x", buffer[i]);
+		if ((i+1) % 16 == 0) {
+			TC_PRINT("\n");
+		}
 		if (buffer[i] == num) {
 			count++;
 		}
 	}
+	TC_PRINT("\n");
 
-	if (count >= 2) {
+	if (count >= BUFFER_LENGTH / 10) {
 		return RECHECK_RANDOM_ENTROPY;
 	} else {
 		return TC_PASS;
@@ -106,6 +132,7 @@ static int get_entropy(void)
 
 ZTEST(entropy_api, test_entropy_get_entropy)
 {
+	TC_PRINT("Using API %s\n", USE_ISR ? "entropy_get_entropy_isr" : "entropy_get_entropy");
 	zassert_true(get_entropy() == TC_PASS);
 }
 
