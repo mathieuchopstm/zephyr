@@ -24,6 +24,16 @@
 #endif /* IRQLESS_TRNG */
 
 /* Cross-series LL compatibility wrappers */
+static inline uint32_t ll_rng_is_enabled(RNG_TypeDef *RNGx)
+{
+#if defined(CONFIG_SOC_STM32WB09XX)
+	/* LL function missing from STM32CubeWB0 v1.0.0 */
+	return (READ_BIT(RNGx->CR, RNG_CR_DISABLE) == LL_RNG_CR_DISABLE_0);
+#else
+	return LL_RNG_IsEnabled(RNGx);
+#endif
+}
+
 static inline void ll_rng_enable_it(RNG_TypeDef *RNGx)
 {
 	/* Silence "unused" warning on IRQ-less hardware*/
