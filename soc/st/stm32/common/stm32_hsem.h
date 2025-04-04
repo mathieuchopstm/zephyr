@@ -115,9 +115,7 @@
  */
 static inline void z_stm32_hsem_lock(uint32_t  hsem, uint32_t retry)
 {
-#if defined(CONFIG_SOC_SERIES_STM32WBX) || defined(CONFIG_STM32H7_DUAL_CORE) \
-	|| defined(CONFIG_SOC_SERIES_STM32MP1X)
-
+#if defined(CONFIG_STM32_MULTICORE)
 	while (LL_HSEM_1StepLock(HSEM, hsem)) {
 		if (retry != HSEM_LOCK_WAIT_FOREVER) {
 			retry--;
@@ -126,7 +124,7 @@ static inline void z_stm32_hsem_lock(uint32_t  hsem, uint32_t retry)
 			}
 		}
 	}
-#endif /* CONFIG_SOC_SERIES_STM32WBX || CONFIG_STM32H7_DUAL_CORE || ... */
+#endif /* CONFIG_STM32_MULTICORE */
 }
 
 /**
@@ -134,13 +132,11 @@ static inline void z_stm32_hsem_lock(uint32_t  hsem, uint32_t retry)
  */
 static inline int z_stm32_hsem_try_lock(uint32_t hsem)
 {
-#if defined(CONFIG_SOC_SERIES_STM32WBX) || defined(CONFIG_STM32H7_DUAL_CORE) \
-	|| defined(CONFIG_SOC_SERIES_STM32MP1X)
-
+#if defined(CONFIG_STM32_MULTICORE)
 	if (LL_HSEM_1StepLock(HSEM, hsem)) {
 		return -EAGAIN;
 	}
-#endif /* CONFIG_SOC_SERIES_STM32WBX || CONFIG_STM32H7_DUAL_CORE || ... */
+#endif /* CONFIG_STM32_MULTICORE */
 
 	return 0;
 }
@@ -150,10 +146,9 @@ static inline int z_stm32_hsem_try_lock(uint32_t hsem)
  */
 static inline void z_stm32_hsem_unlock(uint32_t  hsem)
 {
-#if defined(CONFIG_SOC_SERIES_STM32WBX) || defined(CONFIG_STM32H7_DUAL_CORE) \
-	|| defined(CONFIG_SOC_SERIES_STM32MP1X)
+#if defined(CONFIG_STM32_MULTICORE)
 	LL_HSEM_ReleaseLock(HSEM, hsem, 0);
-#endif /* CONFIG_SOC_SERIES_STM32WBX || CONFIG_STM32H7_DUAL_CORE || ... */
+#endif /* CONFIG_STM32_MULTICORE */
 }
 
 /**
@@ -163,11 +158,9 @@ static inline bool z_stm32_hsem_is_owned(uint32_t hsem)
 {
 	bool owned = false;
 
-#if defined(CONFIG_SOC_SERIES_STM32WBX) || defined(CONFIG_STM32H7_DUAL_CORE) \
-	|| defined(CONFIG_SOC_SERIES_STM32MP1X)
-
+#if defined(CONFIG_STM32_MULTICORE)
 	owned = LL_HSEM_GetCoreId(HSEM, hsem) == LL_HSEM_COREID;
-#endif /* CONFIG_SOC_SERIES_STM32WBX || CONFIG_STM32H7_DUAL_CORE || ... */
+#endif /* CONFIG_STM32_MULTICORE */
 
 	return owned;
 }

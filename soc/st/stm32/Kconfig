@@ -18,6 +18,14 @@ DT_CHOSEN_Z_CCM := zephyr,ccm
 config STM32_CCM
 	def_bool $(dt_chosen_enabled,$(DT_CHOSEN_Z_CCM))
 
+config STM32_MULTICORE
+	bool
+	default y if SOC_SERIES_STM32WBX || \
+		     SOC_SERIES_STM32MP1X || \
+		     STM32H7_DUAL_CORE
+	help
+	  This hidden option is selected when the STM32 SoC has multiple cores.
+
 config USE_STM32_ASSERT
 	depends on ASSERT
 	bool "STM32Cube HAL and LL drivers asserts"
