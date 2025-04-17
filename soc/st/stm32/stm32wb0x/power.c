@@ -50,6 +50,8 @@ static uint32_t bcd2int(uint32_t bcd)
 	return (bcd & 0xF0) * 10 + (bcd & 0xF);
 }
 
+#if !defined(CONFIG_BT) /* REMOVE "|| 1" TO TRANSFER RESPONSIBILITY TO BLE DRIVER */ || 1
+
 void z_cms_lptim_hook_on_lpm_entry(uint64_t max_lpm_time_us)
 {
 	/**
@@ -241,6 +243,8 @@ uint64_t z_cms_lptim_hook_on_lpm_exit(void)
 
 	return (uint64_t)elapsed_us;
 }
+
+#endif /* !CONFIG_BT */
 
 /**
  * System-level state managed by PM callbacks
