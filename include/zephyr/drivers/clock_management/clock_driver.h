@@ -19,6 +19,13 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/toolchain.h>
 
+#ifndef TOOLCHAIN_IGNORE_WSHADOW_BEGIN
+#define TOOLCHAIN_IGNORE_WSHADOW_BEGIN
+#endif
+#ifndef TOOLCHAIN_IGNORE_WSHADOW_END
+#define TOOLCHAIN_IGNORE_WSHADOW_END
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
