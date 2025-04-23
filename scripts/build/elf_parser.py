@@ -90,11 +90,13 @@ class ClockOrdinals(_Symbol):
         format += "{:d}h".format(len(self.data) // 2)
         self._ordinals = struct.unpack(format, self.data)
         self._handles = []
+        self._handle2ordinal = {}
         for ordinal in self._ordinals:
             # Find ordinal handle
             try:
                 offset = clock_ords.index(ordinal)
                 self._handles.append(offset + 1)
+                self._handle2ordinal[offset + 1] = ordinal
             except ValueError:
                 # Ordinal was not found
                 pass
