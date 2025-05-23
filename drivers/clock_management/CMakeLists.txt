@@ -12,6 +12,7 @@ add_clock_management_header(clock_management_drivers.h)
 
 add_subdirectory(generic)
 add_subdirectory(nxp_syscon)
+add_subdirectory(stm32)
 
 # Include headers for all clock management drivers, registered with add_clock_management_header
 zephyr_library_compile_options("-include$<JOIN:$<TARGET_PROPERTY:clock_management_header_target,INTERFACE_SOURCES>,;-include>")
