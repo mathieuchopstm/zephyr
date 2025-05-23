@@ -30,4 +30,11 @@ config CLOCK_MANAGEMENT_STM32_CLOCK_GENERATOR
 	help
 	  Driver for STM32 internal clock generators
 
+config CLOCK_MANAGEMENT_STM32_SYSCLK_PRESCALER
+	bool "STM32 SYSCLK prescaler driver"
+	default y
+	depends on DT_HAS_ST_STM32_SYSCLK_PRESCALER_ENABLED
+	help
+	  Driver for STM32 SYSCLK prescaler
+
 endif # SOC_FAMILY_STM32

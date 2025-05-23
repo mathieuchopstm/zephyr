@@ -23,6 +23,11 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GENERATOR_DATA_GET(node_id, prop, idx)	\
 		DT_PHA_BY_IDX(node_id, prop, idx, enable)
 
+/* Prescaler field contains one less than the desired division factor */
+#define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_DATA_DEFINE(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_DATA_GET(node_id, prop, idx)	\
+		(DT_PHA_BY_IDX(node_id, prop, idx, prescaler) - 1)
+
 /** @endcond */
 
 #ifdef __cplusplus
