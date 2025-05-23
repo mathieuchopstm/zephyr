@@ -1,0 +1,22 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Generic always-on clock prescaler with fixed factor
+
+compatible: "fixed-prescaler"
+
+include:
+  - name: clock-node.yaml
+    property-blocklist:
+      - reg
+
+properties:
+  division-factor:
+    type: int
+    required: true
+    description: Division factor between input and output clock
+
+  "#clock-cells":
+    const: 0
+
