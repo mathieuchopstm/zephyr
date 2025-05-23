@@ -2,5 +2,16 @@ board:
   name: nucleo_c071rb
   full_name: Nucleo C071RB
   vendor: st
+  revision:
+    format: letter
+    default: "O"
+    exact: true
+    revisions:
+      # "V"anilla (no Clock Management)
+      - name: "V"
+      # "O"ptimized (using STM32-specific drivers for everything)
+      - name: "O"
+      # "G"eneric (using generic drivers when available, e.g., gate/mux)
+      - name: "G"
   socs:
     - name: stm32c071xx
