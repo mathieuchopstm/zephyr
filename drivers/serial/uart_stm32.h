@@ -24,10 +24,17 @@ struct uart_stm32_config {
 	USART_TypeDef *usart;
 	/* Reset controller device configuration */
 	const struct reset_dt_spec reset;
+#if defined(CONFIG_CLOCK_CONTROL)
 	/* clock subsystem driving this peripheral */
 	const struct stm32_pclken *pclken;
 	/* number of clock subsystems */
 	size_t pclk_len;
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	const struct clock_output *clock_output;
+	clock_management_state_t clock_init_state;
+	clock_management_state_t clock_on_state;
+	clock_management_state_t clock_off_state;
+#endif
 	/* switch to enable single wire / half duplex feature */
 	bool single_wire;
 	/* enable tx/rx pin swap */
