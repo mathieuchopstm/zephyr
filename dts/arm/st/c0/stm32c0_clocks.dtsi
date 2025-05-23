@@ -1,0 +1,365 @@
+/*
+ * Copyright (c) 2025 STMicroelectronics
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#define RCC_BASE	0x40021000
+#define RCC_CR		(RCC_BASE + 0x00)
+#define RCC_CFGR	(RCC_BASE + 0x08)
+#define RCC_IOPENR	(RCC_BASE + 0x34)
+#define RCC_APBENR1	(RCC_BASE + 0x3C)
+#define RCC_APBENR2	(RCC_BASE + 0x40)
+#define RCC_CCIPR	(RCC_BASE + 0x54)
+#define RCC_CSR1	(RCC_BASE + 0x5C)
+#define RCC_CSR2	(RCC_BASE + 0x60)
+
+/* Or: RCC_FIELD(reg_name, end_offset, start_offset) ?
+ *	#define RCC_FIELD(reg_name, end, start)	(RCC_ ##reg_name) (start) ((end) - (start) + 1)
+ */
+#define RCC_FIELD(reg_name, offset, size)	(RCC_ ##reg_name) (offset) (size)
+#define RCC_BIT(reg_name, offset)		(RCC_ ##reg_name) (offset)
+
+&cpu0 {
+	clock-outputs = <&system_clock>;
+	clock-output-names = "default";
+};
+
+/ {
+	clock_tree_root: zephyr,cms-clock-tree-root { };
+};
+
+&clock_tree_root {
+	hse: hse {
+		compatible = "st,stm32-hse", "st,stm32-internal-clkgen";
+		#clock-cells = <2>;
+		rcc-reg = <RCC_CR>;
+		enable-offset = <16>;
+		status-offset = <17>;
+		bypass-offset = <18>;
+
+		/**
+		 * Disable the HSE node by default, as we
+		 * are not specifying the clock-frequency
+		 * property here, but it is required.
+		 *
+		 * Users of HSE will enable node and define
+		 * clock frequency in board DT
+		 */
+		status = "disabled";
+
+		hse_div32_for_rtc: hse_div32_for_rtc {
+			compatible = "fixed-prescaler";
+			#clock-cells = <0>;
+			division-factor = <8>;
+		};
+	};
+
+	hsi: hsi {
+		compatible = "st,stm32-internal-clkgen";
+		#clock-cells = <1>;
+		rcc-reg = <RCC_CR>;
+		enable-offset = <8>;
+		status-offset = <10>;
+		clock-frequency = <DT_FREQ_M(48)>;
+
+		hsisys: hsisys {
+			compatible = "st,stm32c0-hsisys-div";
+			#clock-cells = <1>;
+			reg-and-field = <RCC_FIELD(CR, 11, 3)>;
+		};
+
+		hsiker: hsiker {
+			/* yeah, compatible name is bad... */
+			compatible = "st,stm32-sysclk-prescaler";
+			reg-and-field = <RCC_FIELD(CR, 5, 3)>;
+			#clock-cells = <1>;
+		};
+	};
+
+	/* STM32C071xx only */
+	hsiusb48: hsiusb48 {
+		compatible = "st,stm32-internal-clkgen";
+		#clock-cells = <1>;
+		rcc-reg = <RCC_CR>;
+		enable-offset = <22>;
+		status-offset = <23>;
+		clock-frequency = <DT_FREQ_M(48)>;
+	};
+
+	lsi: lsi {
+		compatible = "st,stm32-internal-clkgen";
+		#clock-cells = <1>;
+		rcc-reg = <RCC_CSR2>;
+		enable-offset = <0>;
+		status-offset = <1>;
+		clock-frequency = <DT_FREQ_K(32)>;
+
+		/* TODO: support this
+		 * iwdg_clk: clock {
+		 *	compatible = "clock-output";
+		 *	...
+		 *};
+		 */
+	};
+
+	lse: lse {
+		compatible = "st,stm32-lse", "st,stm32-internal-clkgen";
+		#clock-cells = <3>;
+		rcc-reg = <RCC_CSR1>;
+		enable-offset = <0>;
+		status-offset = <1>;
+		bypass-offset = <2>;
+		drive-capability-field = <3 1>;
+		clock-frequency = <32768>;
+	};
+
+	/* muxes */
+	sysclk_mux: sysclk-mux {
+		compatible = "st,stm32-clock-multiplexer";
+		#clock-cells = <1>;
+
+		reg-and-field = <RCC_FIELD(CFGR, 0, 3)>;
+		inputs = /* 0b000: */<&hsisys>,
+			 /* 0b001: */<&hse>,
+			 /* 0b010: */<&hsiusb48>,
+			 /* 0b011: */<&lsi>,
+			 /* 0b100: */<&lse>;
+			 /* Others: reserved */
+
+		sysclk: sysclk_div: sysclk-div {
+			compatible = "st,stm32-sysclk-prescaler";
+			#clock-cells = <1>;
+
+			reg-and-field = <RCC_FIELD(CR, 2, 3)>;
+
+			/* Dummy clock output to allow configuring tree upper part */
+			system_clock: sysclk {
+				compatible = "clock-output";
+				#clock-cells = <0>;
+
+				sysclk_48mhz_hse: sysclk-48mhz-hse {
+					compatible = "clock-state";
+					clocks = <
+						&hse 1 0
+						&sysclk_mux 0x1
+						&sysclk_div 0x1
+						&ahbpre 0x0
+						&apbpre 0x0>;
+					clock-frequency = <DT_FREQ_M(48)>;
+				};
+			};
+
+			hclk: ahbpre: ahbpre {
+				compatible = "st,stm32-bus-prescaler";
+				reg-and-field = <RCC_FIELD(CFGR, 8, 4)>;
+				#clock-cells = <1>;
+
+				ahbpre;
+
+				/**
+				 * HCLK/8 fixed prescaler is not represented here because:
+				 *	- only SysTick can consume it
+				 *	- Zephyr clocks SysTick with CPU clock
+				 */
+
+				pclk: apbpre: apbpre {
+					compatible = "st,stm32-bus-prescaler";
+					reg-and-field = <RCC_FIELD(CFGR, 12, 3)>;
+					#clock-cells = <1>;
+
+					/* TODO: implement this
+					 * timpclk: tim_prescaler: clock {
+					 *	compatible = "st,timer-prescaler";
+					 *};
+					 */
+
+					usart2_gate: usart2-gate {
+						compatible = "st,stm32-clock-gate";
+						#clock-cells = <1>;
+						reg-and-field = <RCC_BIT(APBENR1, 17)>;
+
+						usart2_clk: clock-output {
+							compatible = "clock-output";
+							#clock-cells = <0>;
+
+							usart2_off: usart2_off {
+								compatible = "clock-state";
+								clocks = <&usart2_gate 0>;
+								clock-frequency = <0>;
+							};
+
+							usart2_on: usart2_on {
+								compatible = "clock-state";
+								clocks = <&usart2_gate 1>;
+							};
+						};
+					};
+
+				};
+
+				/**
+				 * RefMan doesn't specify which clock ticks IOPORT bus...
+				 * The most sensical assumption is that it's the same as
+				 * the CPU clock, a.k.a. the AHBCLK.
+				 */
+				gpioa_gate: gpioa-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(IOPENR, 0)>;
+
+					gpioa_clk: clock {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+
+						gpioa_on: gpioa-on {
+							compatible = "clock-state";
+							clocks = <&gpioa_gate 1>;
+							clock-frequency = <0>;
+						};
+
+						gpioa_off: gpioa-off {
+							compatible = "clock-state";
+							clocks = <&gpioa_gate 0>;
+							clock-frequency = <0>;
+						};
+					};
+				};
+
+				gpiob_gate: gpiob-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(IOPENR, 1)>;
+
+					gpiob_clk: clock {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+
+						gpiob_on: gpiob-on {
+							compatible = "clock-state";
+							clocks = <&gpiob_gate 1>;
+							clock-frequency = <0>;
+						};
+
+						gpiob_off: gpiob-off {
+							compatible = "clock-state";
+							clocks = <&gpiob_gate 0>;
+							clock-frequency = <0>;
+						};
+					};
+				};
+
+				gpioc_gate: gpioc-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(IOPENR, 2)>;
+
+					gpioc_clk: clock {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+
+						gpioc_on: gpioc-on {
+							compatible = "clock-state";
+							clocks = <&gpioc_gate 1>;
+							clock-frequency = <0>;
+						};
+
+						gpioc_off: gpioc-off {
+							compatible = "clock-state";
+							clocks = <&gpioc_gate 0>;
+							clock-frequency = <0>;
+						};
+					};
+				};
+
+				gpiod_gate: gpiod-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(IOPENR, 3)>;
+
+					gpiod_clk: clock {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+
+						gpiod_on: gpiod-on {
+							compatible = "clock-state";
+							clocks = <&gpiod_gate 1>;
+							clock-frequency = <0>;
+						};
+
+						gpiod_off: gpiod-off {
+							compatible = "clock-state";
+							clocks = <&gpiod_gate 0>;
+							clock-frequency = <0>;
+						};
+					};
+				};
+
+				gpiof_gate: gpiof-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(IOPENR, 5)>;
+
+					gpiof_clk: clock {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+
+						gpiof_on: gpiof-on {
+							compatible = "clock-state";
+							clocks = <&gpiof_gate 1>;
+							clock-frequency = <0>;
+						};
+
+						gpiof_off: gpiof-off {
+							compatible = "clock-state";
+							clocks = <&gpiof_gate 0>;
+							clock-frequency = <0>;
+						};
+					};
+				};
+			};
+		};
+	};
+
+	usart1_mux: usart1-mux {
+		compatible = "st,stm32-clock-multiplexer";
+		#clock-cells = <1>;
+
+		reg-and-field = <RCC_FIELD(CCIPR, 0, 2)>;
+		inputs = /* 0b00: */<&pclk>,
+			 /* 0b01: */<&sysclk>,
+			 /* 0b10: */<&hsiker>,
+			 /* 0b11: */<&lse>;
+
+		usart1_gate: usart1-gate {
+			compatible = "st,stm32-clock-gate";
+			#clock-cells = <1>;
+			reg-and-field = <RCC_BIT(APBENR2, 14)>;
+
+			usart1_clk: clock-output {
+				compatible = "clock-output";
+				#clock-cells = <0>;
+
+				usart1_off: usart1_off {
+					compatible = "clock-state";
+					clocks = <&usart1_gate 0>;
+					clock-frequency = <0>;
+				};
+
+				usart1_on: usart1_on {
+					compatible = "clock-state";
+					clocks = <&usart1_gate 1>;
+				};
+			};
+		};
+	};
+};
+
+/* These should be in main DTSI but are placed here to avoid touching it */
+&gpioa  { clock-outputs = <&gpioa_clk>;  clock-output-names = "default"; };
+&gpiob  { clock-outputs = <&gpiob_clk>;  clock-output-names = "default"; };
+&gpioc  { clock-outputs = <&gpioc_clk>;  clock-output-names = "default"; };
+&gpiod  { clock-outputs = <&gpiod_clk>;  clock-output-names = "default"; };
+&gpiof  { clock-outputs = <&gpiof_clk>;  clock-output-names = "default"; };
+&usart1 { clock-outputs = <&usart1_clk>; clock-output-names = "default"; };
+&usart2 { clock-outputs = <&usart2_clk>; clock-output-names = "default"; };
