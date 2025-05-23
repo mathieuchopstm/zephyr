@@ -1,0 +1,25 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 clock gate
+
+compatible: "st,stm32-clock-gate"
+
+include: [clock-node.yaml]
+
+properties:
+  reg-and-field:
+    required: true
+    type: array
+    description: |
+      Location of the field controlling this clock node in RCC.
+
+      Two elements:
+        [0]: RCC register address
+        [1]: offset of configuration field
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - enable
