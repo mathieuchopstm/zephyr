@@ -165,3 +165,95 @@
 &dmamux1 {
 	status = "okay";
 };
+
+/******************************************************************
+ *                        CLOCK MANAGEMENT                        *
+ ******************************************************************/
+
+/**
+ * Include clock management-specific DTSI.
+ * This has compatibles for the optimized drivers.
+ * We do this in common DTS to have stable ordinals
+ * across builds with and without clock management.
+ */
+#include <st/c0/stm32c0_clocks.dtsi>
+
+/* bind states to devices (i.e., configure tree) */
+&cpu0 {
+	clock-state-0 = <&sysclk_48mhz_hse>;
+	clock-state-names = "default";
+};
+
+/* NOTE: if you edit CPU clock frequency,
+ * don't forget to update this value so
+ * that CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC
+ * is correct. (may require pristine build)
+ */
+&rcc {
+	clock-frequency = <DT_FREQ_M(48)>;
+};
+
+
+&hse {
+	clock-frequency = <DT_FREQ_M(48)>;
+	status = "okay";
+};
+
+&gpioa {
+	clock-state-0 = <&gpioa_on>;
+	clock-state-1 = <&gpioa_off>;
+	clock-state-names = "on", "off";
+};
+
+&gpiob {
+	clock-state-0 = <&gpiob_on>;
+	clock-state-1 = <&gpiob_off>;
+	clock-state-names = "on", "off";
+};
+
+&gpioc {
+	clock-state-0 = <&gpioc_on>;
+	clock-state-1 = <&gpioc_off>;
+	clock-state-names = "on", "off";
+};
+
+&gpiod {
+	clock-state-0 = <&gpiod_on>;
+	clock-state-1 = <&gpiod_off>;
+	clock-state-names = "on", "off";
+};
+
+&gpiof {
+	clock-state-0 = <&gpiof_on>;
+	clock-state-1 = <&gpiof_off>;
+	clock-state-names = "on", "off";
+};
+
+&usart1_clk {
+	usart1_init: usart1_init {
+		compatible = "clock-state";
+		clocks = <&usart1_mux 0>; //USART1_CLK = APBCLK
+		clock-frequency = <0>;
+	};
+
+	usart1_on {
+		clock-frequency = <DT_FREQ_M(48)>;
+	};
+};
+
+&usart2_on {
+	clock-frequency = <DT_FREQ_M(48)>;
+};
+
+&usart1 {
+	clock-state-0 = <&usart1_init>;
+	clock-state-1 = <&usart1_on>;
+	clock-state-2 = <&usart1_off>;
+	clock-state-names = "init", "on", "off";
+};
+
+&usart2 {
+	clock-state-0 = <&usart2_on>;
+	clock-state-1 = <&usart2_off>;
+	clock-state-names = "on", "off";
+};
