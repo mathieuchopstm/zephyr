@@ -3,6 +3,7 @@
  */
 #include "stm32_clock_management_common.h"
 
+#include <zephyr/devicetree.h>
 #include <zephyr/arch/common/sys_io.h>
 #include <zephyr/drivers/clock_management.h>
 
@@ -27,6 +28,14 @@ void stm32_clk_write_field(const struct stm32_reg_field field, uint32_t val)
 	regval |= (val << field.offset);
 
 	sys_write32(regval, addr);
+
+	/**
+	 * Return only once we are use the value has been written
+	 * and taken into account by reading back the register.
+	 * RCC will block until the operation has been completed
+	 * if we wrote to e.g., peripheral enable register.
+	 */
+	(void)sys_read32(addr);
 }
 
 void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected)
@@ -41,9 +50,9 @@ void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected)
 }
 #endif
 
-/* --- */
+/** TODO: this doesn't work on multi-core SoCs */
+#define DT_DRV_COMPAT IDENTITY(DT_STRING_TOKEN_BY_IDX(DT_PATH(cpus, cpu_0), compatible, 0))
 
-#define DT_DRV_COMPAT arm_cortex_m0_
 CLOCK_MANAGEMENT_DT_INST_DEFINE_OUTPUT(0);
 
 static int stm32_clock_initialize(void)
