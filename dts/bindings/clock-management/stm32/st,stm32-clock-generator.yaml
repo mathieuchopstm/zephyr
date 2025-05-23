@@ -1,0 +1,39 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  STM32 internal clock generator
+
+  This can be HSI, LSI, or any other generator that has only an "enable" and "status" bit.
+
+  NOTE: both bits must be in the same register.
+
+compatible: "st,stm32-clock-generator"
+
+include: [clock-node.yaml]
+
+properties:
+  rcc-reg:
+    type: int
+    required: true
+    description: Address of the control register in RCC
+
+  enable-offset:
+    type: int
+    required: true
+    description: Offset of "generator enable" bit in register
+
+  status-offset:
+    type: int
+    required: true
+    description: Offset of "generator is enabled" bit in register
+
+  clock-frequency:
+    type: int
+    required: true
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - enable
