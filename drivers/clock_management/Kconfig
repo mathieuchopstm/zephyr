@@ -59,6 +59,7 @@ config CLOCK_MANAGEMENT_SOURCE
 
 rsource "generic/Kconfig"
 source "drivers/clock_management/nxp_syscon/Kconfig"
+rsource "stm32/Kconfig"
 
 module = CLOCK_MANAGEMENT
 module-str = clock-management

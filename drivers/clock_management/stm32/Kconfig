@@ -1,0 +1,12 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+if SOC_FAMILY_STM32
+
+config CLOCK_MANAGEMENT_STM32
+	bool
+	default y
+	help
+	  Hidden symbol to enable common clock management code for STM32 family.
+
+endif # SOC_FAMILY_STM32
