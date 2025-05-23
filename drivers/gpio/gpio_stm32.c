@@ -354,6 +354,7 @@ static int gpio_stm32_clock_request(const struct device *dev, bool on)
 
 	__ASSERT_NO_MSG(dev != NULL);
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	/* enable clock for subsystem */
 	const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 
@@ -364,7 +365,11 @@ static int gpio_stm32_clock_request(const struct device *dev, bool on)
 		ret = clock_control_off(clk,
 					(clock_control_subsys_t)&cfg->pclken);
 	}
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	clock_management_state_t state = (on) ? cfg->clock_on_state : cfg->clock_off_state;
 
+	ret = clock_management_apply_state(cfg->clock_output, state);
+#endif
 	return ret;
 }
 
@@ -714,9 +719,11 @@ static int gpio_stm32_init(const struct device *dev)
 
 	data->dev = dev;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	if (!device_is_ready(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE))) {
 		return -ENODEV;
 	}
+#endif
 
 #if (defined(PWR_CR2_IOSV) || defined(PWR_SVMCR_IO2SV)) && \
 	DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(gpiog))
@@ -746,10 +753,17 @@ static int gpio_stm32_init(const struct device *dev)
 			 .port_pin_mask = GPIO_PORT_PIN_MASK_FROM_NGPIOS(16U), \
 		},							       \
 		.base = (uint32_t *)__base_addr,				       \
+		IF_ENABLED(CONFIG_CLOCK_CONTROL, (				\
 		.port = __port,						       \
-		.pclken = { .bus = __bus, .enr = __cenr }		       \
+		.pclken = { .bus = __bus, .enr = __cenr }))		       \
+		IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (				\
+		.clock_output = CLOCK_MANAGEMENT_DT_GET_OUTPUT(__node),		\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(__node, default, on),		\
+		.clock_off_state = CLOCK_MANAGEMENT_DT_GET_STATE(__node, default, off)))	\
 	};								       \
 	static struct gpio_stm32_data gpio_stm32_data_## __suffix;	       \
+	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (					\
+		CLOCK_MANAGEMENT_DT_DEFINE_OUTPUT(__node);))			\
 	PM_DEVICE_DT_DEFINE(__node, gpio_stm32_pm_action);		       \
 	DEVICE_DT_DEFINE(__node,					       \
 			    gpio_stm32_init,				       \
