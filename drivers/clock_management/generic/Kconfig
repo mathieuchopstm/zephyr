@@ -1,4 +1,11 @@
 
+config CLOCK_MANAGEMENT_GATE
+	bool "Clock gate driver"
+	default y
+	depends on DT_HAS_CLOCK_GATE_ENABLED
+	help
+	  Driver for generic clock gates
+
 config CLOCK_MANAGEMENT_POW2_PRESCALER
 	bool "Power-of-two prescaler driver"
 	default y

@@ -1,0 +1,27 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Generic single-bit-control clock gate
+
+compatible: "clock-gate"
+
+include: [clock-node.yaml]
+
+properties:
+  reg:
+    required: true
+    description: |
+      Address cell: register address
+      Size cell:    not used
+
+  gate-offset:
+    type: int
+    required: true
+    description: Gate bit offset in register
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - gate_enable
