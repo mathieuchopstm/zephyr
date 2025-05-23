@@ -1,0 +1,13 @@
+
+config CLOCK_MANAGEMENT_POW2_PRESCALER
+	bool "Power-of-two prescaler driver"
+	default y
+	depends on DT_HAS_POW2_PRESCALER_ENABLED
+	help
+	  Driver for configurable prescalers with a power-of-two division factor
+
+	  These prescalers are always active and their output frequency is:
+	  			Fout = Fin / 2^k
+
+	  where k is the value programmed in the register field controlling the prescaler
+	  (k in [0; 2^(field width) - 1] ==> prescaler in [1; 2^(2^(field width) - 1))])
