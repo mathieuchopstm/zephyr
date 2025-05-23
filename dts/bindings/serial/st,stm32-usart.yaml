@@ -2,4 +2,4 @@ description: STM32 USART
 
 compatible: "st,stm32-usart"
 
-include: st,stm32-uart-base.yaml
+include: [clock-device.yaml, "st,stm32-uart-base.yaml"]
