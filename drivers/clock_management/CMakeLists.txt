@@ -10,6 +10,7 @@ zephyr_library_sources_ifdef(CONFIG_CLOCK_MANAGEMENT_SOURCE clock_source.c)
 # Header for common clock drivers
 add_clock_management_header(clock_management_drivers.h)
 
+add_subdirectory(generic)
 add_subdirectory(nxp_syscon)
 
 # Include headers for all clock management drivers, registered with add_clock_management_header

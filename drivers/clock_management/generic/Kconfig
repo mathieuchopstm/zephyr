@@ -1,0 +1,16 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+#
+# Generic drivers for common clock tree elements
+#
+
+config CLOCK_MANAGEMENT_GENERIC_DRIVERS_READ_AFTER_WRITE
+	bool "Read back values after write"
+	default y
+	help
+	  Controls whether or not the generic clock management
+	  drivers will read back MMIO registers after writing
+	  to them. This is recommended or mandatory on certain
+	  platforms to ensure that clock configurations have
+	  been applied properly before returning.
