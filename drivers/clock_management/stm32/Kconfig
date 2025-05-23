@@ -16,4 +16,11 @@ config CLOCK_MANAGEMENT_STM32_INLINE
 	  Controls whether the STM32 register accessors are inlined in all drivers,
 	  or implemented as functions in a single file called by other drivers.
 
+config CLOCK_MANAGEMENT_STM32_BUS_PRESCALER
+	bool "STM32 bus prescaler driver"
+	default y
+	depends on DT_HAS_ST_STM32_BUS_PRESCALER_ENABLED
+	help
+	  Driver for STM32 bus clock prescalers
+
 endif # SOC_FAMILY_STM32

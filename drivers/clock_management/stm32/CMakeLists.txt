@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 zephyr_library_sources_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32 stm32_clock_management_common.c)
+zephyr_library_sources_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32_BUS_PRESCALER stm32_bus_prescaler.c)
 
 # Header
 add_clock_management_header_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32 clock_management_stm32.h)

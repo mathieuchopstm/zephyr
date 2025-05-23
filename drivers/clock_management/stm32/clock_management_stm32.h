@@ -15,6 +15,10 @@ extern "C" {
 
 /** @cond INTERNAL_HIDDEN */
 
+#define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_DATA_DEFINE(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_DATA_GET(node_id, prop, idx)		\
+	DT_PHA_BY_IDX(node_id, prop, idx, prescaler)
+
 /** @endcond */
 
 #ifdef __cplusplus
