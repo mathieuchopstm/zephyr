@@ -1,0 +1,36 @@
+/* Replace compatible on nodes where a generic driver is available */
+&sysclk_mux {
+	compatible = "clock-mux";
+};
+
+&usart1_mux {
+	compatible = "clock-mux";
+};
+
+&usart1_gate {
+	compatible = "clock-gate";
+};
+
+&usart2_gate {
+	compatible = "clock-gate";
+};
+
+&gpioa_gate {
+	compatible = "clock-gate";
+};
+
+&gpiob_gate {
+	compatible = "clock-gate";
+};
+
+&gpioc_gate {
+	compatible = "clock-gate";
+};
+
+&gpiod_gate {
+	compatible = "clock-gate";
+};
+
+&gpiof_gate {
+	compatible = "clock-gate";
+};

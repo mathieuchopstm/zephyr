@@ -1,0 +1,5 @@
+# Disable clock control
+CONFIG_CLOCK_CONTROL=n
+
+# Enable clock management
+CONFIG_CLOCK_MANAGEMENT=y
