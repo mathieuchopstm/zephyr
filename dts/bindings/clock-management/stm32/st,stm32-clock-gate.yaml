@@ -1,0 +1,26 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 clock gate
+
+compatible: "st,stm32-clock-gate"
+
+include: [clock-node.yaml]
+
+properties:
+  reg:
+    required: true
+    description: |
+      Address cell: register address
+      Size cell:    not used (should be 1)
+
+  gate-offset:
+    type: int
+    required: true
+    description: Gate bit offset in register
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - enable

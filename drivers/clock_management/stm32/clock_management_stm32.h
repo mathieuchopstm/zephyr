@@ -19,6 +19,10 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_DATA_GET(node_id, prop, idx)		\
 	DT_PHA_BY_IDX(node_id, prop, idx, prescaler)
 
+#define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GATE_DATA_DEFINE(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GATE_DATA_GET(node_id, prop, idx)		\
+	DT_PHA_BY_IDX(node_id, prop, idx, enable)
+
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GENERATOR_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GENERATOR_DATA_GET(node_id, prop, idx)	\
 		DT_PHA_BY_IDX(node_id, prop, idx, enable)
