@@ -30,6 +30,7 @@
 #endif
 
 #include <zephyr/linker/sections.h>
+#include <zephyr/drivers/clock_management.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include "uart_stm32.h"
 
@@ -143,10 +144,11 @@ static inline void uart_stm32_set_baudrate(const struct device *dev, uint32_t ba
 {
 	const struct uart_stm32_config *config = dev->config;
 	USART_TypeDef *usart = config->usart;
-	struct uart_stm32_data *data = dev->data;
+	__maybe_unused struct uart_stm32_data *data = dev->data;
 
 	uint32_t clock_rate;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	/* Get clock rate */
 	if (IS_ENABLED(STM32_UART_DOMAIN_CLOCK_SUPPORT) && (config->pclk_len > 1)) {
 		if (clock_control_get_rate(data->clock,
@@ -163,6 +165,16 @@ static inline void uart_stm32_set_baudrate(const struct device *dev, uint32_t ba
 			return;
 		}
 	}
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	int rate = clock_management_get_rate(config->clock_output);
+
+	if (rate < 0) {
+		LOG_ERR("clock_management_get_rate() failed (%d)", rate);
+		return;
+	}
+
+	clock_rate = rate;
+#endif /* CONFIG_CLOCK_CONTROL */
 
 #if HAS_LPUART
 	if (IS_LPUART_INSTANCE(usart)) {
@@ -818,6 +830,7 @@ static int uart_stm32_err_check(const struct device *dev)
 	return err;
 }
 
+#if defined(CONFIG_CLOCK_CONTROL)
 static inline void __uart_stm32_get_clock(const struct device *dev)
 {
 	struct uart_stm32_data *data = dev->data;
@@ -825,6 +838,7 @@ static inline void __uart_stm32_get_clock(const struct device *dev)
 
 	data->clock = clk;
 }
+#endif
 
 #ifdef CONFIG_UART_INTERRUPT_DRIVEN
 
@@ -2028,9 +2042,10 @@ static DEVICE_API(uart, uart_stm32_driver_api) = {
 static int uart_stm32_clocks_enable(const struct device *dev)
 {
 	const struct uart_stm32_config *config = dev->config;
-	struct uart_stm32_data *data = dev->data;
+	__maybe_unused struct uart_stm32_data *data = dev->data;
 	int err;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	__uart_stm32_get_clock(dev);
 
 	if (!device_is_ready(data->clock)) {
@@ -2054,7 +2069,23 @@ static int uart_stm32_clocks_enable(const struct device *dev)
 			return err;
 		}
 	}
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	/* configure mux - TODO: do we need to gate this behind DOMAIN_CLOCK_SUPPORT? */
+	if (config->clock_init_state != exCLOCK_MANAGEMENT_STATE_NONE) {
+		err = clock_management_apply_state(config->clock_output, config->clock_init_state);
+		if (err < 0) {
+			LOG_ERR("failed to apply USART configuration state (%d)", err);
+			return err;
+		}
+	}
 
+	/* enable USART clock */
+	err = clock_management_apply_state(config->clock_output, config->clock_on_state);
+	if (err < 0) {
+		LOG_ERR("failed to turn on USART clock (%d)", err);
+		return err;
+	}
+#endif
 	return 0;
 }
 
@@ -2247,9 +2278,13 @@ static int uart_stm32_pm_action(const struct device *dev,
 			return err;
 		}
 
+#if defined(CONFIG_CLOCK_CONTROL)
 		/* Enable clock */
 		err = clock_control_on(data->clock,
 					(clock_control_subsys_t)&config->pclken[0]);
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+		err = clock_management_apply_state(config->clock_output, config->clock_on_state);
+#endif
 		if (err < 0) {
 			LOG_ERR("Could not enable (LP)UART clock");
 			return err;
@@ -2266,8 +2301,12 @@ static int uart_stm32_pm_action(const struct device *dev,
 		break;
 	case PM_DEVICE_ACTION_SUSPEND:
 		uart_stm32_suspend_setup(dev);
+#if defined(CONFIG_CLOCK_CONTROL)
 		/* Stop device clock. Note: fixed clocks are not handled yet. */
 		err = clock_control_off(data->clock, (clock_control_subsys_t)&config->pclken[0]);
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+		err = clock_management_apply_state(config->clock_output, config->clock_off_state);
+#endif
 		if (err < 0) {
 			LOG_ERR("Could not enable (LP)UART clock");
 			return err;
@@ -2458,8 +2497,12 @@ STM32_UART_IRQ_HANDLER_DECL(index)					\
 									\
 PINCTRL_DT_INST_DEFINE(index);						\
 									\
+IF_ENABLED(CONFIG_CLOCK_CONTROL, (					\
 static const struct stm32_pclken pclken_##index[] =			\
-					    STM32_DT_INST_CLOCKS(index);\
+					    STM32_DT_INST_CLOCKS(index);))\
+									\
+IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (					\
+	CLOCK_MANAGEMENT_DT_INST_DEFINE_OUTPUT(index);))			\
 									\
 static struct uart_config uart_cfg_##index = {				\
 	.baudrate = DT_INST_PROP(index, current_speed),			\
@@ -2474,8 +2517,15 @@ static struct uart_config uart_cfg_##index = {				\
 static const struct uart_stm32_config uart_stm32_cfg_##index = {	\
 	.usart = (USART_TypeDef *)DT_INST_REG_ADDR(index),		\
 	.reset = RESET_DT_SPEC_GET(DT_DRV_INST(index)),			\
+	IF_ENABLED(CONFIG_CLOCK_CONTROL, (				\
 	.pclken = pclken_##index,					\
-	.pclk_len = DT_INST_NUM_CLOCKS(index),				\
+	.pclk_len = DT_INST_NUM_CLOCKS(index),))			\
+	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (				\
+		.clock_output = CLOCK_MANAGEMENT_DT_INST_GET_OUTPUT(index), \
+		.clock_init_state = exCLOCK_MANAGEMENT_DT_INST_GET_STATE_OR( \
+			index, default, init, exCLOCK_MANAGEMENT_STATE_NONE),		   \
+		.clock_off_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, off), \
+		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, on),))	\
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),			\
 	.single_wire = DT_INST_PROP(index, single_wire),		\
 	.tx_rx_swap = DT_INST_PROP(index, tx_rx_swap),			\
