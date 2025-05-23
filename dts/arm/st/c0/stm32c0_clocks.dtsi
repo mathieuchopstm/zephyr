@@ -68,7 +68,7 @@
 		clock-frequency = <DT_FREQ_M(48)>;
 
 		hsisys: clock-hsisys@40021000 {
-			compatible = "pow2-prescaler";
+			compatible = "st,stm32-sysclk-prescaler";
 			reg = <RCC_CR 3>;
 			field-offset = <0>;
 			#clock-cells = <1>;
