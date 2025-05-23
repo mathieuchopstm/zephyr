@@ -1,0 +1,27 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 SYSCLK prescaler
+
+compatible: "st,stm32-sysclk-prescaler"
+
+include: [clock-node.yaml]
+
+properties:
+  reg:
+    required: true
+    description: |
+      Address cell: Offset of register in RCC
+      Size cell: size of configuration field (number of bits)
+
+  field-offset:
+    type: int
+    required: true
+    description: |
+      Offset of the configuration field in RCC register (LSB index)
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - prescaler
