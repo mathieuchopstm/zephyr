@@ -11,6 +11,7 @@
  * @file header for STM32 GPIO
  */
 
+#include <zephyr/drivers/clock_management.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/drivers/gpio.h>
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32f1_pinctrl)
@@ -66,7 +67,13 @@ struct gpio_stm32_config {
 	uint32_t *base;
 	/* IO port */
 	int port;
+#if defined(CONFIG_CLOCK_CONTROL)
 	struct stm32_pclken pclken;
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	const struct clock_output *clock_output;
+	clock_management_state_t clock_on_state;
+	clock_management_state_t clock_off_state;
+#endif
 };
 
 /**
