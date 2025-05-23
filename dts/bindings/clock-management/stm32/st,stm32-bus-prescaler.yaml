@@ -1,0 +1,29 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 bus clock prescaler
+
+compatible: "st,stm32-bus-prescaler"
+
+include: [clock-node.yaml]
+
+properties:
+  reg-and-field:
+    required: true
+    type: array
+    description: |
+      Three elements:
+        [0]: RCC register address
+        [1]: offset of configuration field
+        [2]: size of configuration field
+
+  ahbpre:
+    type: boolean
+    description: True on AHB prescaler. False otherwise.
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  # must be in register format
+  - prescaler
