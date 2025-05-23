@@ -14,6 +14,15 @@
 #define RCC_CSR1	(RCC_BASE + 0x5C)
 #define RCC_CSR2	(RCC_BASE + 0x60)
 
+/* Set to 1 to use generic drivers; set to 0 for STM32 drivers */
+#if 0
+#	define GATE_COMPAT "clock-gate"
+#	define MUX_COMPAT "clock-mux"
+#else
+#	define GATE_COMPAT "st,stm32-clock-gate"
+#	define MUX_COMPAT "st,stm32-clock-multiplexer"
+#endif
+
 &cpu0 {
 	clock-outputs = <&system_clock>;
 	clock-output-names = "default";
@@ -120,7 +129,7 @@
 
 	/* muxes */
 	sysclk_mux: sysclk-mux@40021008 {
-		compatible = "clock-mux";
+		compatible = MUX_COMPAT;
 		#clock-cells = <1>;
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -165,7 +174,7 @@
 			 * the CPU clock, a.k.a. the AHBCLK.
 			 */
 			gpioa_gate: gpioa-gate@40021034 {
-				compatible = "clock-gate";
+				compatible = GATE_COMPAT;
 				#clock-cells = <1>;
 				reg = <RCC_IOPENR 1>;
 				gate-offset = <0>;
@@ -189,7 +198,7 @@
 			};
 
 			gpiob_gate: gpiob-gate@40021034 {
-				compatible = "clock-gate";
+				compatible = GATE_COMPAT;
 				#clock-cells = <1>;
 				reg = <RCC_IOPENR 1>;
 				gate-offset = <1>;
@@ -213,7 +222,7 @@
 			};
 
 			gpioc_gate: gpioc-gate@40021034 {
-				compatible = "clock-gate";
+				compatible = GATE_COMPAT;
 				#clock-cells = <1>;
 				reg = <RCC_IOPENR 1>;
 				gate-offset = <2>;
@@ -237,7 +246,7 @@
 			};
 
 			gpiod_gate: gpiod-gate@40021034 {
-				compatible = "clock-gate";
+				compatible = GATE_COMPAT;
 				#clock-cells = <1>;
 				reg = <RCC_IOPENR 1>;
 				gate-offset = <3>;
@@ -261,7 +270,7 @@
 			};
 
 			gpiof_gate: gpiof-gate@40021034 {
-				compatible = "clock-gate";
+				compatible = GATE_COMPAT;
 				#clock-cells = <1>;
 				reg = <RCC_IOPENR 1>;
 				gate-offset = <5>;
@@ -316,7 +325,7 @@
 					 */
 
 					usart2_gate: usart2-gate@4002103c {
-						compatible = "clock-gate";
+						compatible = GATE_COMPAT;
 						#clock-cells = <1>;
 						reg = <RCC_APBENR1 1>;
 						gate-offset = <17>;
@@ -344,7 +353,7 @@
 	};
 
 	usart1_mux: usart1-mux@40021054 {
-		compatible = "clock-mux";
+		compatible = MUX_COMPAT;
 		#clock-cells = <1>;
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -357,7 +366,7 @@
 			 /* 0b11: */<&lse>;
 
 		usart1_gate: usart1-gate@40021040 {
-			compatible = "clock-gate";
+			compatible = GATE_COMPAT;
 			#clock-cells = <1>;
 			reg = <RCC_APBENR2 1>;
 			gate-offset = <14>;
