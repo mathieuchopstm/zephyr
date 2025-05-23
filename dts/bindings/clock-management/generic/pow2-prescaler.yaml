@@ -1,0 +1,29 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Generic always-on clock prescaler, with configurable power-of-2 division factor
+
+compatible: "pow2-prescaler"
+
+include: [clock-node.yaml]
+
+properties:
+  reg:
+    required: true
+    description: |
+      Address cell: register address
+      Size cell:    size of the configuration field (number of bits)
+
+  field-offset:
+    type: int
+    required: true
+    description: |
+      Offset of the configuration field in register (LSB index)
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  # Must be a power of 2
+  - prescaler

@@ -8,6 +8,7 @@
 #define ZEPHYR_DRIVERS_CLOCK_MANAGEMENT_DRIVERS_H_
 
 #include <zephyr/devicetree.h>
+#include <zephyr/sys/util_macro.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,12 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_CLOCK_SOURCE_DATA_GET(node_id, prop, idx)      \
 	DT_PHA_BY_IDX(node_id, prop, idx, gate)
 
+
+/* pow2-prescaler: data is value to program in register field (= LOG2(prescaler)) */
+#define Z_CLOCK_MANAGEMENT_POW2_PRESCALER_DATA_DEFINE(node_id, prop, idx)	\
+		BUILD_ASSERT(IS_POWER_OF_TWO(DT_PHA_BY_IDX(node_id, prop, idx, prescaler)))
+#define Z_CLOCK_MANAGEMENT_POW2_PRESCALER_DATA_GET(node_id, prop, idx)		\
+		LOG2(DT_PHA_BY_IDX(node_id, prop, idx, prescaler))
 /** @endcond */
 
 #ifdef __cplusplus
