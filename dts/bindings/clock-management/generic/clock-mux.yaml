@@ -1,0 +1,40 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: Generic clock multiplexer
+
+compatible: "clock-mux"
+
+include: [clock-node.yaml]
+
+properties:
+  reg:
+    required: true
+    description: |
+      Address cell: register address
+      Size cell:    mux field size (in bits)
+
+  mux-offset:
+    type: int
+    required: true
+    description: Offset of mux field in register
+
+  inputs:
+    type: phandles
+    required: true
+    description: |
+      Multiplexer inputs
+
+      The index in this array corresponds to the value that must be programmed
+      in the mux register field to select the source found at that index.
+
+      For example, with `inputs = <&clk_a &no_clock &clk_b &clk_c>;`:
+        * a value of 0 selects `clk_a`
+        * a value of 1 selects no clock
+        * a value of 2 selects `clk_b`
+        * a value of 3 selects `clk_c`
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - input_selection
