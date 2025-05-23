@@ -15,6 +15,13 @@ config CLOCK_MANAGEMENT_GENERIC_DRIVERS_READ_AFTER_WRITE
 	  platforms to ensure that clock configurations have
 	  been applied properly before returning.
 
+config CLOCK_MANAGEMENT_FIXED_PRESCALER
+	bool "Fixed prescaler driver"
+	default y
+	depends on DT_HAS_FIXED_PRESCALER_ENABLED
+	help
+	  Driver for always-active prescalers with a fixed division factor
+
 config CLOCK_MANAGEMENT_GATE
 	bool "Clock gate driver"
 	default y

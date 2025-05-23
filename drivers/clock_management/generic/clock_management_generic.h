@@ -16,6 +16,8 @@ extern "C" {
 /** @cond INTERNAL_HIDDEN */
 
 /* Macro definitions for generic clock drivers */
+	/* fixed-prescaler has clock-cells = <0> */
+
 #define Z_CLOCK_MANAGEMENT_CLOCK_GATE_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_CLOCK_GATE_DATA_GET(node_id, prop, idx)		\
 	DT_PHA_BY_IDX(node_id, prop, idx, gate_enable)
