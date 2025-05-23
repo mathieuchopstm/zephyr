@@ -9,4 +9,11 @@ config CLOCK_MANAGEMENT_STM32
 	help
 	  Hidden symbol to enable common clock management code for STM32 family.
 
+config CLOCK_MANAGEMENT_STM32_INLINE
+	bool "Inline STM32 register accessors"
+	default n
+	help
+	  Controls whether the STM32 register accessors are inlined in all drivers,
+	  or implemented as functions in a single file called by other drivers.
+
 endif # SOC_FAMILY_STM32
