@@ -6,6 +6,13 @@ config CLOCK_MANAGEMENT_GATE
 	help
 	  Driver for generic clock gates
 
+config CLOCK_MANAGEMENT_MUX
+	bool "Clock multiplexer driver"
+	default y
+	depends on DT_HAS_CLOCK_MUX_ENABLED
+	help
+	  Driver for generic clock multiplexers
+
 config CLOCK_MANAGEMENT_POW2_PRESCALER
 	bool "Power-of-two prescaler driver"
 	default y
