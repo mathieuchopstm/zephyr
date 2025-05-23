@@ -21,3 +21,10 @@ config CLOCK_MANAGEMENT_GATE
 	depends on DT_HAS_CLOCK_GATE_ENABLED
 	help
 	  Driver for generic clock gates
+
+config CLOCK_MANAGEMENT_MUX
+	bool "Clock multiplexer driver"
+	default y
+	depends on DT_HAS_CLOCK_MUX_ENABLED
+	help
+	  Driver for generic clock multiplexers
