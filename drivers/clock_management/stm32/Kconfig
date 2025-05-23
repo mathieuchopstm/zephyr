@@ -23,6 +23,13 @@ config CLOCK_MANAGEMENT_STM32_BUS_PRESCALER
 	help
 	  Driver for STM32 bus clock prescalers
 
+config CLOCK_MANAGEMENT_STM32_CLOCK_GATE
+	bool "STM32 clock gate"
+	default y
+	depends on DT_HAS_ST_STM32_CLOCK_GATE_ENABLED
+	help
+	  Driver for STM32 clock gates
+
 config CLOCK_MANAGEMENT_STM32_CLOCK_GENERATOR
 	bool "STM32 internal clock generator"
 	default y
