@@ -522,14 +522,14 @@ const struct clock_management_output_api clock_output_api = {
 	CLOCK_OUTPUT_RUNTIME_DEFINE(inst)                                      \
 	DT_INST_FOREACH_CHILD(inst, CLOCK_STATE_DEFINE)                        \
 	static const struct clock_output_state *const                          \
-	output_states_##inst[] = {                                             \
+	CONCAT(output_, DT_INST_DEP_ORD(inst), _states)[] = {                  \
 		DT_INST_FOREACH_CHILD_SEP(inst, CLOCK_STATE_GET, (,))          \
 	};                                                                     \
 	static const struct clock_output_data                                  \
 	CONCAT(clock_output_, DT_INST_DEP_ORD(inst)) = {                       \
 		.parent = CLOCK_DT_GET(DT_INST_PARENT(inst)),                  \
 		.num_states = DT_INST_CHILD_NUM(inst),                         \
-		.output_states = output_states_##inst,                         \
+		.output_states = CONCAT(output_, DT_INST_DEP_ORD(inst), _states), \
 		CLOCK_OUTPUT_RUNTIME_INIT(inst)                                \
 	};                                                                     \
 	CLOCK_DT_INST_DEFINE(inst,                                             \
