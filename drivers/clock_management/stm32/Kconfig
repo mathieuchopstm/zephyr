@@ -6,6 +6,7 @@ if SOC_FAMILY_STM32
 config CLOCK_MANAGEMENT_STM32
 	bool
 	default y
+	select USE_STM32_LL_UTILS
 	help
 	  Hidden symbol to enable common clock management code for STM32 family.
 
