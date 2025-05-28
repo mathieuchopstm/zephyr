@@ -751,12 +751,12 @@ def print_any_tree(root, total_size, depth):
     """
     Print the symbol tree.
     """
-    print('{:98s} {:>7s} {:>7s} {:11s} {:16s}'.format(
-        Fore.YELLOW + "Path", "Size", "%", " Address", "Section" + Fore.RESET))
-    print('=' * 138)
+    print('{:70s} {:>7s}  {:16s}'.format(
+        Fore.YELLOW + "Path", "Size", "Section" + Fore.RESET))
+    print('=' * 96)
     for row in RenderTree(root, childiter=node_sort, maxlevel=depth):
         f = len(row.pre) + len(row.node._name)
-        s = str(row.node._size).rjust(100-f)
+        s = str(row.node._size).rjust(60-f)
         percent = 100 * float(row.node._size) / float(total_size)
 
         hex_addr = "-"
@@ -773,9 +773,9 @@ def print_any_tree(root, total_size, depth):
             cc = Fore.GREEN
             cr = Fore.RESET
 
-        print(f"{row.pre}{cc}{row.node._name} {s} {cr}{Fore.BLUE}{percent:6.2f}%{Fore.RESET}  {hex_addr} {section_name}")
-    print('=' * 138)
-    print(f'{total_size:>101}')
+        print(f"{row.pre}{cc}{row.node._name} {s} {cr}  {section_name}")
+    print('=' * 96)
+    print(f'{total_size:>71}')
 
 
 def parse_args():
