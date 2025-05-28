@@ -15,7 +15,7 @@ struct stm32_bus_prescaler_config {
 };
 
 /* TODO: valid for all series? */
-static const uint8_t ahbpre_to_shift_table[] = {
+const uint8_t ahbpre_to_shift_table[] = {
 	/* 0b1000:   2 = 2^1 */ 1,
 	/* 0b1001:   4 = 2^2 */ 2,
 	/* 0b1010:   8 = 2^3 */ 3,
