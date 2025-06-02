@@ -14,3 +14,10 @@ config CLOCK_MANAGEMENT_GENERIC_DRIVERS_READ_AFTER_WRITE
 	  to them. This is recommended or mandatory on certain
 	  platforms to ensure that clock configurations have
 	  been applied properly before returning.
+
+config CLOCK_MANAGEMENT_GATE
+	bool "Clock gate driver"
+	default y
+	depends on DT_HAS_CLOCK_GATE_ENABLED
+	help
+	  Driver for generic clock gates
