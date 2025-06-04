@@ -526,14 +526,14 @@ const struct clock_management_output_api clock_output_api = {
 		DT_INST_FOREACH_CHILD_SEP(inst, CLOCK_STATE_GET, (,))          \
 	};                                                                     \
 	static const struct clock_output_data                                  \
-	CONCAT(clock_output_, DT_INST_DEP_ORD(inst)) = {                       \
+	CONCAT(clock_output_, DT_INST_DEP_ORD(inst), _data) = {                \
 		.parent = CLOCK_DT_GET(DT_INST_PARENT(inst)),                  \
 		.num_states = DT_INST_CHILD_NUM(inst),                         \
 		.output_states = CONCAT(output_, DT_INST_DEP_ORD(inst), _states), \
 		CLOCK_OUTPUT_RUNTIME_INIT(inst)                                \
 	};                                                                     \
 	CLOCK_DT_INST_DEFINE(inst,                                             \
-			     &CONCAT(clock_output_, DT_INST_DEP_ORD(inst)),    \
+			     &CONCAT(clock_output_, DT_INST_DEP_ORD(inst), _data), \
 			     (struct clock_management_driver_api *)&clock_output_api);
 
 DT_INST_FOREACH_STATUS_OKAY(CLOCK_OUTPUT_DEFINE)
