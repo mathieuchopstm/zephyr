@@ -33,6 +33,12 @@
 		zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_RAM) )>;
 	};
 
+	axisram4: memory@34270000 {
+		compatible = "zephyr,memory-region";
+		reg = <0x34270000 DT_SIZE_K(448)>;
+		zephyr,memory-region = "SRAM4";
+	};
+
 	leds: leds {
 		compatible = "gpio-leds";
 

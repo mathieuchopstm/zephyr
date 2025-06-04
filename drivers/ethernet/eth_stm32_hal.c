@@ -12,6 +12,7 @@
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
+#include <zephyr/cache.h>
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
@@ -109,6 +110,10 @@ static const struct device *eth_stm32_phy_dev = DEVICE_DT_GET(DT_INST_PHANDLE(0,
 #elif defined(CONFIG_SOC_SERIES_STM32H7X)
 #define __eth_stm32_desc __attribute__((section(".eth_stm32_desc")))
 #define __eth_stm32_buf  __attribute__((section(".eth_stm32_buf")))
+#elif DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_ethernet)
+#define __eth_stm32_desc_rx __attribute__((section(".eth_stm32_desc_rx")))
+#define __eth_stm32_desc_tx __attribute__((section(".eth_stm32_desc_tx")))
+#define __eth_stm32_buf  __attribute__((section(".eth_stm32_buf")))
 #elif defined(CONFIG_NOCACHE_MEMORY)
 #define __eth_stm32_desc __nocache __aligned(4)
 #define __eth_stm32_buf  __nocache __aligned(4)
@@ -118,17 +123,19 @@ static const struct device *eth_stm32_phy_dev = DEVICE_DT_GET(DT_INST_PHANDLE(0,
 #endif
 
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_ethernet)
-static ETH_DMADescTypeDef
-	dma_rx_desc_tab[ETH_DMA_RX_CH_CNT][ETH_RXBUFNB] ALIGN_32BYTES(__eth_stm32_desc);
-static ETH_DMADescTypeDef
-	dma_tx_desc_tab[ETH_DMA_TX_CH_CNT][ETH_TXBUFNB] ALIGN_32BYTES(__eth_stm32_desc);
+__ALIGN_BEGIN ETH_DMADescTypeDef  __eth_stm32_desc_rx
+dma_rx_desc_tab[ETH_DMA_RX_CH_CNT][ETH_RXBUFNB] __ALIGN_END;
+__ALIGN_BEGIN ETH_DMADescTypeDef  __eth_stm32_desc_tx
+dma_tx_desc_tab[ETH_DMA_TX_CH_CNT][ETH_TXBUFNB] __ALIGN_END;
 #else
 static ETH_DMADescTypeDef dma_rx_desc_tab[ETH_RXBUFNB] __eth_stm32_desc;
 static ETH_DMADescTypeDef dma_tx_desc_tab[ETH_TXBUFNB] __eth_stm32_desc;
 #endif
 
-static uint8_t dma_rx_buffer[ETH_RXBUFNB][ETH_STM32_RX_BUF_SIZE] __eth_stm32_buf;
-static uint8_t dma_tx_buffer[ETH_TXBUFNB][ETH_STM32_TX_BUF_SIZE] __eth_stm32_buf;
+__ALIGN_BEGIN uint8_t __nocache
+dma_rx_buffer[ETH_RXBUFNB][ETH_STM32_RX_BUF_SIZE] __ALIGN_END;
+__ALIGN_BEGIN uint8_t __nocache
+dma_tx_buffer[ETH_TXBUFNB][ETH_STM32_TX_BUF_SIZE] __ALIGN_END;
 
 #if defined(CONFIG_ETH_STM32_HAL_API_V2)
 
@@ -413,6 +420,7 @@ static int eth_tx(const struct device *dev, struct net_pkt *pkt)
 	/* Reset TX complete interrupt semaphore before TX request*/
 	k_sem_reset(&dev_data->tx_int_sem);
 
+	sys_cache_data_flush_range((uint32_t*)(tx_config.TxBuffer->buffer), tx_config.TxBuffer->len);
 	/* tx_buffer is allocated on function stack, we need */
 	/* to wait for the transfer to complete */
 	/* So it is not freed before the interrupt happens */
@@ -535,11 +543,12 @@ static struct net_pkt *eth_rx(const struct device *dev)
 #endif /* CONFIG_PTP_CLOCK_STM32_HAL */
 
 #if defined(CONFIG_ETH_STM32_HAL_API_V2)
+	k_mutex_lock(&dev_data->rx_mutex, K_FOREVER);
 	if (HAL_ETH_ReadData(heth, &appbuf) != HAL_OK) {
 		/* no frame available */
 		return NULL;
 	}
-
+	k_mutex_unlock(&dev_data->rx_mutex);
 	/* computing total length */
 	for (rx_header = (struct eth_stm32_rx_buffer_header *)appbuf;
 			rx_header; rx_header = rx_header->next) {
@@ -861,7 +870,21 @@ static int eth_initialize(const struct device *dev)
 	/* RISAF Configuration */
 	RISAF_Config();
 #endif
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_ethernet)
 
+	/* eth descriptors in AXISRAM4 */
+	{
+	/* SRAM4 memory clock enable */
+	LL_MEM_EnableClock(LL_MEM_AXISRAM4);
+
+	/* Power On AXISRAM4 */
+	{
+	RAMCFG_HandleTypeDef hramcfg  = {0};
+	hramcfg.Instance = RAMCFG_SRAM4_AXI;
+	HAL_RAMCFG_EnableAXISRAM(&hramcfg);
+	}
+	}
+#endif
 	/* enable clock */
 	ret = clock_control_on(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE),
 		(clock_control_subsys_t)&cfg->pclken);
@@ -1024,6 +1047,7 @@ static int eth_init_api_v2(const struct device *dev)
 
 	/* Initialize semaphores */
 	k_mutex_init(&dev_data->tx_mutex);
+	k_mutex_init(&dev_data->rx_mutex);
 	k_sem_init(&dev_data->rx_int_sem, 0, K_SEM_MAX_LIMIT);
 	k_sem_init(&dev_data->tx_int_sem, 0, K_SEM_MAX_LIMIT);
 
