@@ -306,8 +306,9 @@ zephyr_udc0: &usbotg_hs1 {
 
 &mac {
 	status = "okay";
-	pinctrl-0 = <&eth1_rgmii_gtx_clk_pf0
+	pinctrl-0 = <&eth1_rgmii_gtx_clk_pf0 /* Cube: OSPEED=1 */
 		     &eth1_rgmii_clk125_pf2
+		/*	 &eth1_clk_pf1 */ /* uncomment to get parity w/ Cube */
 		     &eth1_rgmii_rx_clk_pf7
 		     &eth1_rgmii_rxd2_pf8
 		     &eth1_rgmii_rxd3_pf9
@@ -319,7 +320,8 @@ zephyr_udc0: &usbotg_hs1 {
 		     &eth1_rgmii_rxd1_pf15
 		     &eth1_rgmii_txd2_pg3
 		     &eth1_rgmii_txd3_pg4
-		     &eth1_phy_intn_pd3>;
+			/* allow PHY driver to use pin as GPIO IRQ instead */
+		    /* &eth1_phy_intn_pd3 */>;
 	pinctrl-names = "default";
 	phy-connection-type = "rgmii";
 	phy-handle = <&eth_phy>;
@@ -330,9 +332,11 @@ zephyr_udc0: &usbotg_hs1 {
 	pinctrl-0 = <&eth1_mdio_pd12 &eth1_mdc_pd1>;
 	pinctrl-names = "default";
 
-	eth_phy: ethernet-phy@0 {
-		compatible = "ethernet-phy";
-		reg = <0x0>;
+	eth_phy: ethernet-phy@1 {
+		compatible = "realtek,rtl8211f";
+		reg = <0x1>;
+		/* uncomment to use driver in IRQ mode */
+/*		int-gpios = <&gpiod 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; */
 	};
 };
 
