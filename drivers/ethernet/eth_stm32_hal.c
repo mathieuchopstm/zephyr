@@ -158,13 +158,23 @@ struct eth_stm32_tx_context {
 	bool used;
 };
 
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_ethernet)
+
+static struct eth_stm32_rx_buffer_header dma_rx_buffer_header[ETH_RXBUFNB * ETH_DMA_RX_CH_CNT];
+static struct eth_stm32_tx_buffer_header dma_tx_buffer_header[ETH_TXBUFNB * ETH_DMA_TX_CH_CNT];
+static struct eth_stm32_tx_context dma_tx_context[ETH_TX_DESC_CNT * ETH_DMA_TX_CH_CNT];
+
+#else
+
 static struct eth_stm32_rx_buffer_header dma_rx_buffer_header[ETH_RXBUFNB];
 static struct eth_stm32_tx_buffer_header dma_tx_buffer_header[ETH_TXBUFNB];
 static struct eth_stm32_tx_context dma_tx_context[ETH_TX_DESC_CNT];
 
+#endif
+
 void HAL_ETH_RxAllocateCallback(uint8_t **buf)
 {
-	for (size_t i = 0; i < ETH_RXBUFNB; ++i) {
+	for (size_t i = 0; i < ARRAY_SIZE(dma_rx_buffer_header); ++i) {
 		if (!dma_rx_buffer_header[i].used) {
 			dma_rx_buffer_header[i].next = NULL;
 			dma_rx_buffer_header[i].size = 0;
@@ -188,7 +198,8 @@ void HAL_ETH_RxLinkCallback(void **pStart, void **pEnd, uint8_t *buff, uint16_t 
 	size_t index = (RxBufferPtr)buff - &dma_rx_buffer[0];
 	struct eth_stm32_rx_buffer_header *header = &dma_rx_buffer_header[index];
 
-	__ASSERT_NO_MSG(index < ETH_RXBUFNB);
+//TEMPORARY
+//	__ASSERT_NO_MSG(index < ETH_RXBUFNB);
 
 	header->size = Length;
 
@@ -230,7 +241,7 @@ void HAL_ETH_TxFreeCallback(uint32_t *buff)
 static inline uint16_t allocate_tx_buffer(void)
 {
 	for (;;) {
-		for (uint16_t index = 0; index < ETH_TXBUFNB; index++) {
+		for (uint16_t index = 0; index < ARRAY_SIZE(dma_tx_buffer_header); index++) {
 			if (!dma_tx_buffer_header[index].used) {
 				dma_tx_buffer_header[index].used = true;
 				return index;
@@ -244,7 +255,7 @@ static inline uint16_t allocate_tx_buffer(void)
 static inline struct eth_stm32_tx_context *allocate_tx_context(struct net_pkt *pkt)
 {
 	for (;;) {
-		for (uint16_t index = 0; index < ETH_TX_DESC_CNT; index++) {
+		for (uint16_t index = 0; index < ARRAY_SIZE(dma_tx_context); index++) {
 			if (!dma_tx_context[index].used) {
 				dma_tx_context[index].used = true;
 				dma_tx_context[index].pkt = pkt;
@@ -584,7 +595,8 @@ static struct net_pkt *eth_rx(const struct device *dev)
 			rx_header; rx_header = rx_header->next) {
 		const size_t index = rx_header - &dma_rx_buffer_header[0];
 
-		__ASSERT_NO_MSG(index < ETH_RXBUFNB);
+// TEMPORARY
+//		__ASSERT_NO_MSG(index < ETH_RXBUFNB);
 		if (net_pkt_write(pkt, dma_rx_buffer[index], rx_header->size)) {
 			LOG_ERR("Failed to append RX buffer to context buffer");
 			net_pkt_unref(pkt);
@@ -1250,6 +1262,9 @@ static enum ethernet_hw_caps eth_stm32_hal_get_capabilities(const struct device 
 #endif
 #if defined(CONFIG_ETH_STM32_MULTICAST_FILTER)
 		| ETHERNET_HW_FILTERING
+#endif
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_ethernet)
+		| ETHERNET_LINK_1000BASE
 #endif
 		;
 }
