@@ -2071,7 +2071,11 @@ static int uart_stm32_clocks_enable(const struct device *dev)
 	}
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
 	/* configure mux - TODO: do we need to gate this behind DOMAIN_CLOCK_SUPPORT? */
+#if defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
+	if (config->clock_init_state != NULL) {
+#else
 	if (config->clock_init_state != 0xFF) {
+#endif
 		err = clock_management_apply_state(config->clock_output, config->clock_init_state);
 		if (err < 0) {
 			LOG_ERR("failed to apply USART configuration state (%d)", err);
@@ -2538,7 +2542,9 @@ static const struct uart_stm32_config uart_stm32_cfg_##index = {	\
 	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (				\
 		.clock_output = CLOCK_MANAGEMENT_DT_INST_GET_OUTPUT(index), \
 		.clock_init_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE_OR( \
-			index, default, init, (0xFF)),			   \
+			index, default, init,					\
+			(COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES,	\
+				(NULL), (0xFF)))),			   \
 		.clock_off_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, off), \
 		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, on),))	\
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),			\
