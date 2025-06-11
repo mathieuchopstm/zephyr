@@ -200,6 +200,19 @@ struct clk {
 
 DT_FOREACH_STATUS_OKAY_NODE(Z_MAYBE_CLOCK_DECLARE_INTERNAL)
 
+#if defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
+
+/* make all states visible */
+#define Z_MAYBE_CLOCK_STATE_DECLARE_INTERNAL(node_id)			\
+	extern const struct clock_output_state				\
+	CONCAT(clock_state_, /*stolen from clk_mgmt_common.c */		\
+		DT_DEP_ORD(DT_PARENT(node_id)), _,			\
+		DT_NODE_CHILD_IDX(node_id));
+
+DT_FOREACH_STATUS_OKAY(clock_state, Z_MAYBE_CLOCK_STATE_DECLARE_INTERNAL)
+
+#endif /* CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES */
+
 /**
  * @brief Helper to get a clock dependency ordinal if the clock is referenced
  *

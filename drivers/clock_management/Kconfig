@@ -18,6 +18,28 @@ module = CLOCK_MANAGEMENT
 module-str = clock management
 source "subsys/logging/Kconfig.template.log_config"
 
+config CLOCK_MANAGEMENT_DIRECT_STATES
+	bool "Reference states directly"
+	help
+	  Provide raw pointer to state objects to API consumers
+	  instead of using clock_output_data as middleman. This
+	  should save 12 bytes per clock-output but breaks
+	  RUNTIME and clock_management_req_rate().
+
+config CLOCK_MANAGEMENT_NOFREQ_STATES
+	bool "Don't store frequency in clock states"
+	help
+	  Don't store the clock-frequency DT property from clock-states
+	  into their runtime-accessible objects. This saves some space
+	  but the return value of clock_management_apply_state() becomes
+	  meaningless, clock_management_req_rate() will not work and
+	  RUNTIME will be broken.
+
+# because we don't have clock_output objects
+# when this is enabled, SET_RATE and RUNTIME
+# are not supported
+if !CLOCK_MANAGEMENT_DIRECT_STATES && !CLOCK_MANAGEMENT_NOFREQ_STATES
+
 config CLOCK_MANAGEMENT_SET_RATE
 	bool "Support runtime rate setting"
 	select CLOCK_MANAGEMENT_RUNTIME
@@ -35,6 +57,8 @@ config CLOCK_MANAGEMENT_RUNTIME
 	  will track the clock requests from each consumer, and reject
 	  conflicting requests. This Kconfig also enables registering
 	  for clock rate change notifications
+
+endif # CLOCK_MANAGEMENT_DIRECT_STATES
 
 config CLOCK_MANAGEMENT_CLK_NAME
 	bool "Store names of each clock"

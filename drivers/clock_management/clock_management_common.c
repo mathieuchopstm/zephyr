@@ -42,8 +42,10 @@ struct clock_setting {
 struct clock_output_state {
 	/* Number of clock nodes to configure */
 	const uint8_t num_clocks;
+#if !defined(CONFIG_CLOCK_MANAGEMENT_NOFREQ_STATES)
 	/* Frequency resulting from this setting */
 	const uint32_t frequency;
+#endif
 #if defined(CONFIG_CLOCK_MANAGEMENT_RUNTIME) || defined(__DOXYGEN__)
 	/* Should this state lock the clock configuration? */
 	const bool locking;
@@ -146,13 +148,15 @@ static void clock_remove_constraint(const struct clk *clk_hw,
  * @return 0 if state applied successfully, or error returned from
  * `clock_configure` if not
  */
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
 static int clock_apply_state(const struct clk *clk_hw,
 			     const struct clock_output_state *clk_state)
 {
-	const struct clock_output_data *data = clk_hw->hw_data;
+	__maybe_unused const struct clock_output_data *data = clk_hw->hw_data;
 	int ret;
 
 	if (clk_state->num_clocks == 0) {
+#if !defined(CONFIG_CLOCK_MANAGEMENT_NOFREQ_STATES)
 		/* Use runtime clock setting */
 		ret = clock_round_rate(data->parent, clk_state->frequency);
 
@@ -166,6 +170,9 @@ static int clock_apply_state(const struct clk *clk_hw,
 		}
 
 		return 0;
+#else
+		return -ENOTSUP;
+#endif
 	}
 
 	/* Apply this clock state */
@@ -180,6 +187,7 @@ static int clock_apply_state(const struct clk *clk_hw,
 	}
 	return 0;
 }
+#endif
 
 /**
  * @brief Get clock rate for given output
@@ -193,16 +201,20 @@ static int clock_apply_state(const struct clk *clk_hw,
  */
 int clock_management_get_rate(const struct clock_output *clk)
 {
-	const struct clock_output_data *data;
+	__maybe_unused const struct clock_output_data *data;
 
 	if (!clk) {
 		return -EINVAL;
 	}
 
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
 	data = GET_CLK_CORE(clk)->hw_data;
 
 	/* Read rate */
 	return clock_get_rate(data->parent);
+#else
+	return clock_get_rate((const struct clk *)clk);
+#endif
 }
 
 /**
@@ -223,6 +235,8 @@ int clock_management_get_rate(const struct clock_output *clk)
  * @return -EIO if configuration of a clock failed
  * @return frequency of clock output in HZ on success
  */
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES) \
+	&& !defined(CONFIG_CLOCK_MANAGEMENT_NOFREQ_STATES)
 int clock_management_req_rate(const struct clock_output *clk,
 			const struct clock_management_rate_req *req)
 {
@@ -342,6 +356,7 @@ out:
 #endif
 	return ret;
 }
+#endif /* !DIRECT_STATES && !FREQUENCYLESS_STATES */
 
 /**
  * @brief Apply a clock state based on a devicetree clock state identifier
@@ -359,6 +374,7 @@ out:
 int clock_management_apply_state(const struct clock_output *clk,
 			   clock_management_state_t state)
 {
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
 	const struct clock_output_data *data;
 	const struct clock_output_state *clk_state;
 	int ret;
@@ -410,7 +426,30 @@ int clock_management_apply_state(const struct clock_output *clk,
 		memcpy(clk->req, &constraint, sizeof(*clk->req));
 	}
 #endif
+
+#	if !defined(CONFIG_CLOCK_MANAGEMENT_NOFREQ_STATES)
 	return clk_state->frequency;
+#	else
+	return 0;
+#	endif
+
+#else /* !DIRECT_STATES */
+	const struct clock_output_state *clk_state = state;
+	int ret;
+
+	/* apply state directly */
+	for (uint8_t i = 0; i < clk_state->num_clocks; i++) {
+		const struct clock_setting *cfg = &clk_state->clock_settings[i];
+
+		ret = clock_configure(cfg->clock, cfg->clock_config_data);
+		if (ret < 0) {
+			/* Configure failed, exit */
+			return ret;
+		}
+	}
+
+	return 0; /* we don't know frequency */
+#endif /* !DIRECT_STATES */
 }
 
 #if defined(CONFIG_CLOCK_MANAGEMENT_RUNTIME)
@@ -481,9 +520,10 @@ const struct clock_management_output_api clock_output_api = {
 #define CLOCK_STATE_DEFINE(node)                                               \
 	IF_ENABLED(DT_NODE_HAS_PROP(node, clocks), (                           \
 	DT_FOREACH_PROP_ELEM(node, clocks, Z_CLOCK_MANAGEMENT_CLK_DATA_DEFINE);))    \
-	static const struct clock_output_state CLOCK_STATE_NAME(node) = {      \
+	const struct clock_output_state CLOCK_STATE_NAME(node) = {      \
 		.num_clocks = DT_PROP_LEN_OR(node, clocks, 0),                 \
-		.frequency = DT_PROP(node, clock_frequency),                   \
+		COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_NOFREQ_STATES, (), (	\
+			.frequency = DT_PROP(node, clock_frequency),))		\
 		IF_ENABLED(DT_NODE_HAS_PROP(node, clocks), (                   \
 		.clock_settings = {                                            \
 			DT_FOREACH_PROP_ELEM_SEP(node, clocks,                 \
@@ -521,20 +561,22 @@ const struct clock_management_output_api clock_output_api = {
 #define CLOCK_OUTPUT_DEFINE(inst)                                              \
 	CLOCK_OUTPUT_RUNTIME_DEFINE(inst)                                      \
 	DT_INST_FOREACH_CHILD(inst, CLOCK_STATE_DEFINE)                        \
-	static const struct clock_output_state *const                          \
-	CONCAT(output_, DT_INST_DEP_ORD(inst), _states)[] = {                  \
-		DT_INST_FOREACH_CHILD_SEP(inst, CLOCK_STATE_GET, (,))          \
-	};                                                                     \
-	static const struct clock_output_data                                  \
-	CONCAT(clock_output_, DT_INST_DEP_ORD(inst), _data) = {                \
-		.parent = CLOCK_DT_GET(DT_INST_PARENT(inst)),                  \
-		.num_states = DT_INST_CHILD_NUM(inst),                         \
-		.output_states = CONCAT(output_, DT_INST_DEP_ORD(inst), _states), \
-		CLOCK_OUTPUT_RUNTIME_INIT(inst)                                \
-	};                                                                     \
-	CLOCK_DT_INST_DEFINE(inst,                                             \
-			     &CONCAT(clock_output_, DT_INST_DEP_ORD(inst), _data), \
-			     (struct clock_management_driver_api *)&clock_output_api);
+	COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES, (), (			\
+		static const struct clock_output_state *const                          \
+		CONCAT(output_, DT_INST_DEP_ORD(inst), _states)[] = {                  \
+			DT_INST_FOREACH_CHILD_SEP(inst, CLOCK_STATE_GET, (,))          \
+		};                                                                     \
+		static const struct clock_output_data                                  \
+		CONCAT(clock_output_, DT_INST_DEP_ORD(inst), _data) = {                \
+			.parent = CLOCK_DT_GET(DT_INST_PARENT(inst)),                  \
+			.num_states = DT_INST_CHILD_NUM(inst),                         \
+			.output_states = CONCAT(output_, DT_INST_DEP_ORD(inst), _states), \
+			CLOCK_OUTPUT_RUNTIME_INIT(inst)                                \
+		};                                                                     \
+		CLOCK_DT_INST_DEFINE(inst,                                             \
+				     &CONCAT(clock_output_, DT_INST_DEP_ORD(inst), _data), \
+				     (struct clock_management_driver_api *)&clock_output_api);\
+	))
 
 DT_INST_FOREACH_STATUS_OKAY(CLOCK_OUTPUT_DEFINE)
 
