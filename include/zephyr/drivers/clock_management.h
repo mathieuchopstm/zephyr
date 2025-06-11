@@ -38,6 +38,7 @@ extern "C" {
 typedef int (*clock_management_callback_handler_t)(const struct clock_management_event *ev,
 					     const void *user_data);
 
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
 /**
  * @typedef clock_management_state_t
  * @brief Define the clock management state identifier
@@ -49,6 +50,20 @@ typedef uint8_t clock_management_state_t;
  * no state is selected (for internal usage by drivers)
  */
 #define exCLOCK_MANAGEMENT_STATE_NONE	(0xFFU)
+#else
+/**
+ * When direct states are enabled, clock_management_state_t
+ * holds a direct pointer to the struct clock_output_state
+ * instead of an index in an array of pointers.
+ *
+ * Note: We declare this typedef as pointer to immutable data
+ * because the clock state structures are in ROM.
+ */
+typedef const void *clock_management_state_t;
+
+#define exCLOCK_MANAGEMENT_STATE_NONE	(NULL)
+#endif
+
 
 /**
  * @brief Clock management callback data
@@ -278,11 +293,16 @@ struct clock_output {
  * @param node_id Node identifier for the clock node to get the output for
  * @param name Software defined name for this clock output
  */
-#define CLOCK_MANAGEMENT_GET_OUTPUT(node_id, name)                                   \
-	/* We only actually define output objects if runtime clocking is on */ \
-	COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_RUNTIME, (                               \
-	&Z_CLOCK_MANAGEMENT_OUTPUT_NAME(Z_CLOCK_OUTPUT_SYMBOL_NAME(node_id, name))), \
-	((const struct clock_output *)CLOCK_DT_GET(node_id)))
+#define CLOCK_MANAGEMENT_GET_OUTPUT(node_id, name)						\
+	/* We don't define clock outputs when DIRECT_STATES is enabled */			\
+	/* (instead "clock output" is a pointer to the parent clock */				\
+	COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES,					\
+		((const struct clock_output *)CLOCK_DT_GET(DT_PARENT(node_id))),		\
+		(/* We only actually define output objects if runtime clocking is on */		\
+		COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_RUNTIME, (					\
+		&Z_CLOCK_MANAGEMENT_OUTPUT_NAME(Z_CLOCK_OUTPUT_SYMBOL_NAME(node_id, name))),	\
+		((const struct clock_output *)CLOCK_DT_GET(node_id)))				\
+	))
 
 /**
  * @brief Gets a clock output for system clock node at with name @p name in
@@ -380,6 +400,7 @@ struct clock_output {
 		CONCAT(clock_state_, DT_CLOCK_STATE_NAME_IDX(dev_id, state_name)),	\
 		DT_CLOCK_OUTPUT_NAME_IDX(dev_id, output_name))
 
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
 /**
  * @brief Get a clock state identifier from a "clock-state-n" property
  *
@@ -439,6 +460,25 @@ struct clock_output {
 #define CLOCK_MANAGEMENT_DT_GET_STATE(dev_id, output_name, state_name)               \
 	DT_NODE_CHILD_IDX(								\
 		Z_CLOCK_MANAGEMENT_CLKDEV_STATE_NODE(dev_id, output_name, state_name))
+
+#else
+
+#define _statenode(dev_id, output_name, state_name)				\
+	DT_PHANDLE_BY_IDX(dev_id, CONCAT(clock_state_,				\
+		DT_CLOCK_STATE_NAME_IDX(dev_id, state_name)),			\
+		DT_CLOCK_OUTPUT_NAME_IDX(dev_id, output_name))
+
+/* stolen from clock_management_common.c (CLOCK_STATE_NAME) */
+#define _statename(node)                                                 \
+	CONCAT(clock_state_, DT_DEP_ORD(DT_PARENT(node)), _,                   \
+	       DT_NODE_CHILD_IDX(node))
+
+/* clock_management_state_t is pointer to state object */
+#define CLOCK_MANAGEMENT_DT_GET_STATE(dev_id, output_name, state_name)		\
+	(&_statename(_statenode(dev_id, output_name, state_name)))
+
+#endif /* !CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES */
+
 
 /**
  * Does @p dev_id have a clock-output named @p output_name and
