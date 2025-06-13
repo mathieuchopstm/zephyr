@@ -34,6 +34,31 @@ static uint8_t entropy_buffer[BUFFER_LENGTH] = {0};
 
 #define USE_ISR 1
 
+#if 0
+void __trng_backdoor(void) {
+	static bool ran = false;
+	if (!ran) {
+		ran = true;
+
+		/* TODO: trigger NMI? */
+		const struct device *rng = DEVICE_DT_GET(DT_CHOSEN(zephyr_entropy));
+		uint8_t xxx[32];
+		int howmany = entropy_get_entropy_isr(rng, xxx, sizeof(xxx), ENTROPY_BUSYWAIT);
+
+		if (howmany < 0) {
+			/* get mad */
+			__ASSERT_NO_MSG(0);
+		}
+
+		printk("recursive call returns %d\n", howmany);
+		for (int i = 0; i < howmany; i++) {
+			printk("0x%02hhX ", xxx[i]);
+		}
+		printk("\n");
+	}
+}
+#endif
+
 int ege_wrp(const struct device *dev, void *buffer, uint32_t len)
 {
 	if (USE_ISR) {

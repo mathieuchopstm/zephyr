@@ -411,6 +411,11 @@ static uint16_t generate_from_isr(uint8_t *buf, uint16_t len)
 		return 0; /* return cnt is null : no random data available */
 	}
 
+	extern __attribute__((weak)) void __trng_backdoor(void);
+	if (__trng_backdoor != NULL) {
+		__trng_backdoor();
+	}
+
 #if !IRQLESS_TRNG
 	/* Clear NVIC pending bit. This ensures that a subsequent
 	 * RNG event will set the Cortex-M single-bit event register
