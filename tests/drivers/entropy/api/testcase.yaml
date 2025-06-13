@@ -24,6 +24,12 @@ tests:
       - driver
       - entropy
       - psa-crypto
+  drivers.entropy.stm32:
+    filter: dt_compat_enabled("st,stm32-rng") or dt_compat_enabled("st,stm32-rng-noirq")
+    extra_args: "DTC_OVERLAY_FILE=./stm32_rng.overlay"
+    tags:
+      - driver
+      - entropy
   drivers.entropy.virtio:
     filter: CONFIG_ENTROPY_VIRTIO
     extra_args:
