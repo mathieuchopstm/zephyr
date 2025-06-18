@@ -12,4 +12,7 @@ else()
   board_runner_args(stm32cubeprogrammer "--download-address=0x70000000")
 endif()
 
+board_runner_args(stlink_gdbserver "--apid=1" "--extload=MX66UW1G45G_STM32N6570-DK.stldr")
+
 include(${ZEPHYR_BASE}/boards/common/stm32cubeprogrammer.board.cmake)
+include(${ZEPHYR_BASE}/boards/common/stlink_gdbserver.board.cmake)
