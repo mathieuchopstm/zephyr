@@ -90,7 +90,7 @@ const struct clock_management_driver_api stm32_bus_prescaler_api = {
 #define ST_BUS_PRESCALER_DEFINE(inst)						\
 	const struct stm32_bus_prescaler_config CFGNAME(inst) = {		\
 		.parent = CLOCK_DT_GET(DT_INST_PARENT(inst)),			\
-		.prescaler_reg = STM32_INST_REG_FIELD(inst, field_offset),	\
+		.prescaler_reg = STM32_INST_REG_FIELD(inst),			\
 		.prescaler_shift_table = COND_CODE_1(DT_INST_PROP(inst, ahbpre),		\
 			(ahbpre_to_shift_table), (apbpre_to_shift_table)),	\
 	};									\
