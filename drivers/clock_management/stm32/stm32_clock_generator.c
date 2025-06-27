@@ -94,8 +94,8 @@ const struct clock_management_driver_api stm32_clock_generator_api = {
 #define STM32_CLOCK_GENERATOR_DEFINE(inst)							\
 	const struct stm32_clock_generator_config stm32_clock_generator_config_##inst = {	\
 		.clock_rate = DT_INST_PROP(inst, clock_frequency),				\
-		.enable_reg = STM32_INST_REG_FIELD(inst, enable_offset),			\
-		.status_reg = STM32_INST_REG_FIELD(inst, status_offset),			\
+		.enable_reg = STM32_INST_REG_BIT(inst, enable_offset),				\
+		.status_reg = STM32_INST_REG_BIT(inst, status_offset),				\
 	};											\
 	ROOT_CLOCK_DT_INST_DEFINE(inst,								\
 				  &stm32_clock_generator_config_##inst,				\
