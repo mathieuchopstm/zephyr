@@ -60,7 +60,7 @@ const struct clock_management_driver_api stm32_sysclk_prescaler_api = {
 #define ST_SYSCLK_PRESCALER_DEFINE(inst)					\
 	const struct stm32_sysclk_prescaler_config CFGNAME(inst) = {		\
 		.parent = CLOCK_DT_GET(DT_INST_PARENT(inst)),			\
-		.presc_reg_field = STM32_INST_REG_FIELD(inst, field_offset)	\
+		.presc_reg_field = STM32_INST_REG_FIELD(inst)			\
 	};									\
 										\
 	CLOCK_DT_INST_DEFINE(inst, &CFGNAME(inst),				\
