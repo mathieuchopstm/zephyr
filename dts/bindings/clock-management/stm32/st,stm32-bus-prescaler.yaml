@@ -8,17 +8,14 @@ compatible: "st,stm32-bus-prescaler"
 include: [clock-node.yaml]
 
 properties:
-  reg:
+  reg-and-field:
     required: true
+    type: array
     description: |
-      Address cell: Offset of register in RCC
-      Size cell: size of configuration field (number of bits)
-
-  field-offset:
-    type: int
-    required: true
-    description: |
-      Offset of the configuration field in RCC register (LSB index)
+      Three elements:
+        [0]: RCC register address
+        [1]: offset of configuration field
+        [2]: size of configuration field
 
   ahbpre:
     type: boolean
