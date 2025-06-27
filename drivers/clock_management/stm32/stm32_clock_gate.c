@@ -56,7 +56,7 @@ const struct clock_management_driver_api stm32_clock_gate_api = {
 #define STM32_CLOCK_GATE_DEFINE(inst)						\
 	const struct stm32_clock_gate_config stm32_clock_gate_config_##inst = {	\
 		.parent = CLOCK_DT_GET(DT_INST_PARENT(inst)),			\
-		.gate_reg = STM32_INST_REG_FIELD(inst, gate_offset),		\
+		.gate_reg = STM32_INST_REG_FIELD(inst),				\
 	};									\
 	CLOCK_DT_INST_DEFINE(inst,						\
 			     &stm32_clock_gate_config_##inst,			\
