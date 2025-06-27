@@ -8,16 +8,14 @@ compatible: "st,stm32-clock-gate"
 include: [clock-node.yaml]
 
 properties:
-  reg:
+  reg-and-field:
     required: true
+    type: array
     description: |
-      Address cell: register address
-      Size cell:    not used (should be 1)
-
-  gate-offset:
-    type: int
-    required: true
-    description: Gate bit offset in register
+      Three elements:
+        [0]: RCC register address
+        [1]: offset of configuration field
+        [2]: size of configuration field
 
   "#clock-cells":
     const: 1
