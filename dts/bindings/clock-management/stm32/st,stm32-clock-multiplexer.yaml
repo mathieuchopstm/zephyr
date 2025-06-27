@@ -8,16 +8,14 @@ compatible: "st,stm32-clock-multiplexer"
 include: [clock-node.yaml]
 
 properties:
-  reg:
+  reg-and-field:
     required: true
+    type: array
     description: |
-      Address cell: register address
-      Size cell:    mux field size (in bits)
-
-  mux-offset:
-    type: int
-    required: true
-    description: Offset of mux field in register
+      Three elements:
+        [0]: RCC register address
+        [1]: offset of configuration field
+        [2]: size of configuration field
 
   inputs:
     type: phandles
@@ -33,6 +31,7 @@ properties:
         * a value of 1 selects no clock
         * a value of 2 selects `clk_b`
         * a value of 3 selects `clk_c`
+
   "#clock-cells":
     const: 1
 

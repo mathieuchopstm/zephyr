@@ -59,7 +59,7 @@ const struct clock_management_driver_api stm32_clock_mux_api = {
 
 #define STM32_CLOCK_MUX_DEFINE(inst)						\
 	struct stm32_clock_mux_config stm32_clock_mux_##inst = {		\
-		.mux_reg = STM32_INST_REG_FIELD(inst, mux_offset),		\
+		.mux_reg = STM32_INST_REG_FIELD(inst),				\
 		.parents = {							\
 			DT_INST_FOREACH_PROP_ELEM(inst, inputs, GET_MUX_INPUT)	\
 		},								\
