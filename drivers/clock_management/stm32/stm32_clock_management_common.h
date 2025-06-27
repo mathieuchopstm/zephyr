@@ -21,15 +21,28 @@ struct stm32_reg_field {
 #define RCC_ADDR		DT_REG_ADDR(DT_NODELABEL(rcc))
 #define SIZE2MASK(_f_sz)	GENMASK(_f_sz - 1, 0)
 
-#define STM32_REG_FIELD(node, _offset_prop)				\
+#define STM32_REG_FIELD_INIT(_reg_addr, _field_off, _field_sz)		\
 	{								\
-		.reg_offset = (uint16_t)(DT_REG_ADDR(node) - RCC_ADDR),	\
-		.mask = (uint8_t)(SIZE2MASK(DT_REG_SIZE(node))),	\
-		.offset = (uint8_t)(DT_PROP(node, _offset_prop)),	\
+		.reg_offset = (uint16_t)(_reg_addr - RCC_ADDR),		\
+		.mask = (uint8_t)(SIZE2MASK(_field_sz)),		\
+		.offset = (uint8_t)(_field_off),			\
 	}
 
-#define STM32_INST_REG_FIELD(inst, _offset_prop)			\
-		STM32_REG_FIELD(DT_DRV_INST(inst), _offset_prop)
+#define STM32_NODE_REG_FIELD(node)					\
+	STM32_REG_FIELD_INIT(						\
+		DT_PROP_BY_IDX(node, reg_and_field, 0),			\
+		DT_PROP_BY_IDX(node, reg_and_field, 1),			\
+		DT_PROP_BY_IDX(node, reg_and_field, 2))
+
+#define STM32_NODE_REG_BIT(node, _bit_prop_name)			\
+	STM32_REG_FIELD_INIT(						\
+		DT_PROP(node, rcc_reg), DT_PROP(node, _bit_prop_name), 1)
+
+#define STM32_INST_REG_FIELD(inst)					\
+	STM32_NODE_REG_FIELD(DT_DRV_INST(inst))
+
+#define STM32_INST_REG_BIT(inst, _bit_prop_name)			\
+	STM32_NODE_REG_BIT(DT_DRV_INST(inst), _bit_prop_name)
 
 #if !defined(CONFIG_CLOCK_MANAGEMENT_STM32_INLINE)
 uint32_t stm32_clk_read_field(struct stm32_reg_field field);
