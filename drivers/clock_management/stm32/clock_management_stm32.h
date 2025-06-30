@@ -36,6 +36,10 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_DATA_GET(node_id, prop, idx)	\
 		(DT_PHA_BY_IDX(node_id, prop, idx, prescaler) - 1)
 
+#define Z_CLOCK_MANAGEMENT_ST_STM32C0_HSISYS_DIV_DATA_DEFINE(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32C0_HSISYS_DIV_DATA_GET(node_id, prop, idx)		\
+		(DT_PHA_BY_IDX(node_id, prop, idx, prescaler))
+
 /** @endcond */
 
 #ifdef __cplusplus
