@@ -51,6 +51,9 @@ void stm32_clk_write_field(const struct stm32_reg_field field, uint32_t val)
 
 void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected)
 {
+	/* Assert value is in valid range for this field */
+	__ASSERT_NO_MSG((expected & ~((uint32_t)field.mask)) == 0);
+
 	const mem_addr_t addr = RCC_ADDR + field.reg_offset;
 	const uint32_t mask = field.mask << field.offset;
 	const uint32_t value = expected << field.offset;

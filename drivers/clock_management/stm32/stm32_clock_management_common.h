@@ -28,11 +28,24 @@ struct stm32_reg_field {
 		.offset = (uint8_t)(_field_off),			\
 	}
 
+/**
+ * Transform `reg-and-field` property of @p node into stm32_reg_field.
+ *
+ * Property is an array with two or three elements:
+ *	[0]: address of RCC register
+ *	[1]: offset to first bit (LSB) of field
+ *	[2]: number of bits in field
+ * A default field size of 1 (single-bit field) is assumed when the
+ * property has only two elements.
+ */
 #define STM32_NODE_REG_FIELD(node)					\
 	STM32_REG_FIELD_INIT(						\
 		DT_PROP_BY_IDX(node, reg_and_field, 0),			\
 		DT_PROP_BY_IDX(node, reg_and_field, 1),			\
-		DT_PROP_BY_IDX(node, reg_and_field, 2))
+		COND_CODE_1(DT_PROP_HAS_IDX(node, reg_and_field, 2),	\
+			(DT_PROP_BY_IDX(node, reg_and_field, 2)),	\
+			(1))						\
+		)
 
 #define STM32_NODE_REG_BIT(node, _bit_prop_name)			\
 	STM32_REG_FIELD_INIT(						\
@@ -49,9 +62,18 @@ uint32_t stm32_clk_read_field(struct stm32_reg_field field);
 
 /**
  * Set the new value for a register field (via Read-Modify-Write)
+ *
+ * @warning @p val is written verbatim; caller is responsible for
+ * ensuring no bits absent from @p field.mask are set in @p val
  */
 void stm32_clk_write_field(struct stm32_reg_field field, uint32_t val);
 
+/**
+ * Poll register field until it has a specific value.
+ *
+ * @warning @p expected is compared verbatim; caller is responsible
+ * for ensuring no bits absent from @p field.mask are set in it
+ */
 void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected);
 
 #else
