@@ -1,0 +1,23 @@
+# Copyright (c) 2025, STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 HSE clock generator
+
+compatible: "st,stm32-hse"
+
+include: "st,stm32-clkgen-common.yaml"
+
+# TODO: CSS (should be configured via Kconfig?)
+
+properties:
+  "#clock-cells":
+    const: 2
+
+  bypass-offset:
+    type: int
+    required: true
+    description: Offset of "bypass mode enable" bit in register
+
+clock-cells:
+  - enable  # disable/enable generator
+  - bypass  # disable/enable bypass mode

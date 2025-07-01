@@ -1,0 +1,22 @@
+# Copyright (c) 2025, STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  STM32 internal oscillator generator
+
+  This compatible can be used directly for STM32 clock
+  generators with fixed frequency and no configuration
+  (e.g., HSI or LSI). The driver also supports HSE and
+  LSE, but these sources should have their own compatible
+  in first position, in addition to this one.
+
+compatible: "st,stm32-internal-clkgen"
+
+include: "st,stm32-clkgen-common.yaml"
+
+properties:
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - enable  # disable/enable generator
