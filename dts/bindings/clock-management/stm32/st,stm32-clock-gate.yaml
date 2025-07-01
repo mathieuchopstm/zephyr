@@ -12,10 +12,11 @@ properties:
     required: true
     type: array
     description: |
-      Three elements:
+      Location of the field controlling this clock node in RCC.
+
+      Two elements:
         [0]: RCC register address
         [1]: offset of configuration field
-        [2]: size of configuration field
 
   "#clock-cells":
     const: 1
