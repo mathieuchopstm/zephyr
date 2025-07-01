@@ -27,11 +27,12 @@
 
 &rcc {
 	hse: hse {
-		compatible = "st,stm32-clock-generator";
-		#clock-cells = <1>;
+		compatible = "st,stm32-hse", "st,stm32-internal-clkgen";
+		#clock-cells = <2>;
 		rcc-reg = <RCC_CR>;
 		enable-offset = <16>;
 		status-offset = <17>;
+		bypass-offset = <18>;
 
 		/**
 		 * Disable the HSE node by default, as we
@@ -51,7 +52,7 @@
 	};
 
 	hsi: hsi {
-		compatible = "st,stm32-clock-generator";
+		compatible = "st,stm32-internal-clkgen";
 		#clock-cells = <1>;
 		rcc-reg = <RCC_CR>;
 		enable-offset = <8>;
@@ -74,7 +75,7 @@
 
 	/* STM32C071xx only */
 	hsiusb48: hsiusb48 {
-		compatible = "st,stm32-clock-generator";
+		compatible = "st,stm32-internal-clkgen";
 		#clock-cells = <1>;
 		rcc-reg = <RCC_CR>;
 		enable-offset = <22>;
@@ -83,7 +84,7 @@
 	};
 
 	lsi: lsi {
-		compatible = "st,stm32-clock-generator";
+		compatible = "st,stm32-internal-clkgen";
 		#clock-cells = <1>;
 		rcc-reg = <RCC_CSR2>;
 		enable-offset = <0>;
@@ -99,11 +100,13 @@
 	};
 
 	lse: lse {
-		compatible = "st,stm32-clock-generator";
-		#clock-cells = <1>;
+		compatible = "st,stm32-lse", "st,stm32-internal-clkgen";
+		#clock-cells = <3>;
 		rcc-reg = <RCC_CSR1>;
 		enable-offset = <0>;
 		status-offset = <1>;
+		bypass-offset = <2>;
+		drive-capability-field = <3 1>;
 		clock-frequency = <32768>;
 	};
 
@@ -134,7 +137,7 @@
 				sysclk_48mhz_hse: sysclk-48mhz-hse {
 					compatible = "clock-state";
 					clocks = <
-						&hse 1
+						&hse 1 0
 						&sysclk_mux 0x1
 						&sysclk_div 0x1
 						&ahbpre 0x0
