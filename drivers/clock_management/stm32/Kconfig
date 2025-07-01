@@ -44,6 +44,15 @@ config CLOCK_MANAGEMENT_STM32_CLOCK_MULTIPLEXER
 	help
 	  Driver for STM32 clock multiplexers
 
+config CLOCK_MANAGEMENT_STM32_INTERNAL_CLKGEN
+	bool "STM32 internal clock generators driver"
+	default y
+	depends on DT_HAS_ST_STM32_INTERNAL_CLKGEN_ENABLED
+	help
+	  Driver for STM32 clock generators
+
+	  This driver supports HSE, HSI, LSE and LSI.
+
 config CLOCK_MANAGEMENT_STM32_SYSCLK_PRESCALER
 	bool "STM32 SYSCLK prescaler driver"
 	default y

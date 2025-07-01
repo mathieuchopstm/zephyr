@@ -15,6 +15,53 @@ extern "C" {
 
 /** @cond INTERNAL_HIDDEN */
 
+/**
+ * Bits for "st,stm32-clkgenex" configuration
+ * [   00] Enable
+ *	0: Disable generator
+ *	1: Enable generator
+ * [   01] Bypass enable
+ *   Used for external oscillators only (HSE/LSE).
+ *	0: Regular mode (Xtal)
+ *	1: Bypass mode
+ * [27:02] <not used>
+ * [31:28] LSE drive capability
+ *	Refer to target SoC's Reference Manual for details
+ *	about the meaning of this field. 4 bits are reserved
+ *	at software level, but quantity used depends on HW.
+ */
+#define Z_STM32_CLKGENEX_enable_SHIFT			0
+#define Z_STM32_CLKGENEX_enable_MASK			0x1
+#define Z_STM32_CLKGENEX_bypass_SHIFT			1
+#define Z_STM32_CLKGENEX_bypass_MASK			0x1
+#define Z_STM32_CLKGENEX_driving_capability_SHIFT	28
+#define Z_STM32_CLKGENEX_driving_capability_MASK	0xF
+
+#define Z_STM32_CLKGENEX_PROP_FMT(prop_val, cell_name)				\
+	(((prop_val) & CONCAT(Z_STM32_CLKGENEX_, cell_name, _MASK))		\
+		<< CONCAT(Z_STM32_CLKGENEX_, cell_name, _SHIFT))
+
+#define Z_STM32_CLKGENEX_PROP_EXTRACT(node_id, prop, idx, cell_name)		\
+	Z_STM32_CLKGENEX_PROP_FMT(						\
+		DT_PHA_BY_IDX_OR(node_id, prop, idx, cell_name, 0), cell_name)
+
+#define Z_STM32_CLKGENEX_NODEPROP_EXTRACT(node_id, prop)			\
+	Z_STM32_CLKGENEX_PROP_FMT(DT_PROP_OR(node_id, prop, 0), prop)
+
+#define Z_CLOCK_MANAGEMENT_ST_STM32_INTERNAL_CLKGEN_DATA_DEFINE(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_INTERNAL_CLKGEN_DATA_GET(node_id, prop, idx)	\
+	(Z_STM32_CLKGENEX_PROP_EXTRACT(node_id, prop, idx, enable) |		\
+	Z_STM32_CLKGENEX_PROP_EXTRACT(node_id, prop, idx, bypass) |		\
+	Z_STM32_CLKGENEX_PROP_EXTRACT(node_id, prop, idx, driving_capability))
+
+#define Z_CLOCK_MANAGEMENT_ST_STM32_HSE_DATA_DEFINE(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_HSE_DATA_GET(node_id, prop, idx)		\
+	Z_CLOCK_MANAGEMENT_ST_STM32_INTERNAL_CLKGEN_DATA_GET(node_id, prop, idx)
+
+#define Z_CLOCK_MANAGEMENT_ST_STM32_LSE_DATA_DEFINE(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_LSE_DATA_GET(node_id, prop, idx)		\
+	Z_CLOCK_MANAGEMENT_ST_STM32_INTERNAL_CLKGEN_DATA_GET(node_id, prop, idx)
+
 #define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_DATA_GET(node_id, prop, idx)		\
 	DT_PHA_BY_IDX(node_id, prop, idx, prescaler)
