@@ -1,0 +1,33 @@
+# Copyright (c) 2025, STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 LSE clock generator
+
+compatible: "st,stm32-lse"
+
+include: "st,stm32-clkgen-common.yaml"
+
+# TODO: LSECSS (should be configured via Kconfig?)
+
+properties:
+  "#clock-cells":
+    const: 3
+
+  bypass-offset:
+    type: int
+    required: true
+    description: Offset of "bypass mode enable" bit in register
+
+  drive-capability-field:
+    type: array
+    required: true
+    description: |
+      LSE driving capability register field
+
+      [0]: offset to field in register
+      [1]: size of field in register
+
+clock-cells:
+  - enable              # disable/enable generator
+  - bypass              # disable/enable bypass mode
+  - driving_capability  # external crystal driving capability
