@@ -1114,6 +1114,26 @@ if(CONFIG_USERSPACE)
   set(PROCESS_GPERF ${ZEPHYR_BASE}/scripts/build/process_gperf.py)
 endif()
 
+# <=== MCH ===>
+
+if (CONFIG_CLOCK_MANAGEMENT)
+  add_custom_command(
+    OUTPUT ${BINARY_DIR_INCLUDE_GENERATED}/clock_management_generated.h
+    COMMAND ${PYTHON_EXECUTABLE} ${ZEPHYR_BASE}/scripts/build/gen_cms_header.py
+    --edt-pickle ${EDT_PICKLE}
+    --header-out ${BINARY_DIR_INCLUDE_GENERATED}/clock_management_generated.h
+    --init-code-out ${BINARY_DIR_INCLUDE_GENERATED}/clock_management_static_init.c
+    --clock-tree-root "/zephyr,cms-clock-tree-root"
+    --subsystem-owned-compatible "clock-state"
+    --subsystem-owned-compatible "clock-output"
+    DEPENDS ${EDT_PICKLE}
+  )
+  add_custom_target(cms_autogen_h DEPENDS ${BINARY_DIR_INCLUDE_GENERATED}/clock_management_generated.h)
+  add_dependencies(zephyr_generated_headers cms_autogen_h)
+endif()
+
+# <=== MCH ===>
+
 if(CONFIG_CLOCK_MANAGEMENT_RUNTIME)
   # clock_deps.c is generated from ${ZEPHYR_LINK_STAGE_EXECUTABLE} by
   # gen_clock_deps.py
