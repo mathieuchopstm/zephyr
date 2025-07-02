@@ -6,6 +6,16 @@
 include: base.yaml
 
 properties:
+  # TODO: this property should be split out to a new binding
+  # (e.g., "static-initable-clock-node")
+  #
+  # this way, we can guarantee at binding level that one does
+  # not attempt to static-init a node which doesn't support it
+  "zephyr,cms-static-init":
+    type: boolean
+    description: |
+      Clock node is initialized statically during boot.
+
   "#clock-cells":
     type: int
     required: true
