@@ -10,6 +10,8 @@
 #include "clock_management_common.h"
 LOG_MODULE_REGISTER(clock_management, CONFIG_CLOCK_MANAGEMENT_LOG_LEVEL);
 
+#include <zephyr/clock_management_generated.h>
+
 #define DT_DRV_COMPAT clock_output
 
 /*
@@ -619,3 +621,5 @@ int clock_notify_children(const struct clk *clk_hw,
 }
 
 #endif /* CONFIG_CLOCK_MANAGEMENT_RUNTIME */
+
+#include <zephyr/clock_management_static_init.c>
