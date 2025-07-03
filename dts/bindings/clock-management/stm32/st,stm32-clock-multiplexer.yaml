@@ -35,5 +35,10 @@ properties:
   "#clock-cells":
     const: 1
 
+# static configuration
+  input-selection:
+    type: int
+    description: Input to select for static configuration
+
 clock-cells:
   - input_selection

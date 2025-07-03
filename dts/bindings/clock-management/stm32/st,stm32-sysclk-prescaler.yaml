@@ -20,5 +20,10 @@ properties:
   "#clock-cells":
     const: 1
 
+# static configuration
+  prescaler:
+    type: int
+    description: Prescaler value for static configuration
+
 clock-cells:
   - prescaler

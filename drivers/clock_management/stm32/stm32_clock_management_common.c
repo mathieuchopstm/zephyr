@@ -91,6 +91,8 @@ void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected)
 	CLOCK_MANAGEMENT_DT_GET_STATE_NODE(DT_DRV_INST(inst), state_name, output_name)
 
 
+#if 0
+
 /**
  * Declare ourselves as compatible with the CPU node
  * (NOTE: this doesn't work on multicore)
@@ -204,3 +206,43 @@ static int stm32_clock_initialize(void)
 }
 
 SYS_INIT(stm32_clock_initialize, PRE_KERNEL_1, 1);
+
+#else
+
+void stm32_sysclk_mux_change_hook(bool pre)
+{
+#define AHB_PRESCALER DT_PROP(DT_NODELABEL(ahbpre), prescaler)
+
+	extern const uint8_t ahbpre_to_shift_table[];
+	const struct clk *ahbclk = CLOCK_DT_GET(DT_NODELABEL(hclk));
+
+	uint32_t old_flash_freq = clock_get_rate(ahbclk);
+	uint32_t new_flash_freq = CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC;
+
+	if (AHB_PRESCALER != 0) {
+		/**
+		 * c.f. logic in stm32_bus_prescaler
+		 * ==> strip the top bit but without consuming DT
+		 * With `clock_configure_recalc()` we wouldn't need this...
+		 *
+		 * TODO: assert this works as it should...
+		 */
+		const uint32_t index = AHB_PRESCALER &
+				~(BIT(LOG2CEIL(AHB_PRESCALER)));
+		new_flash_freq >>= ahbpre_to_shift_table[index];
+	}
+
+	if (old_flash_freq < new_flash_freq) {
+		if (pre) {
+			LL_SetFlashLatency(new_flash_freq);
+		}
+	} else if (new_flash_freq < old_flash_freq) {
+		if (!pre) {
+			LL_SetFlashLatency(new_flash_freq);
+		}
+	} else {
+		/* Both frequencies equal - do nothing */
+	}
+}
+
+#endif
