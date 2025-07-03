@@ -179,14 +179,40 @@
 #include <st/c0/stm32c0_clocks.dtsi>
 
 /* bind states to devices (i.e., configure tree) */
+#if 0
 &cpu0 {
 	clock-state-0 = <&sysclk_48mhz_hse>;
 	clock-state-names = "default";
 };
+#endif
 
 &hse {
 	clock-frequency = <DT_FREQ_M(48)>;
-	status = "okay";
+
+	/* static configuration here */
+	/* TBD: status = "okay" instead */
+	enable;
+};
+
+&sysclk_mux {
+	/* static configuration here */
+	/* TBD: allow specifying a phandle instead */
+	input-selection = <1>; //HSE
+};
+
+&sysclk_div {
+	/* static configuration here */
+	prescaler = <1>;
+};
+
+&ahbpre {
+	/* static configuration here */
+	prescaler = <0x0>;
+};
+
+&apbpre {
+	/* static configuration here */
+	prescaler = <0x0>;
 };
 
 &gpioa {
