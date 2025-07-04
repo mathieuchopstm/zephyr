@@ -245,13 +245,12 @@
 	clock-state-names = "on", "off";
 };
 
-&usart1_clk {
-	usart1_init: usart1_init {
-		compatible = "clock-state";
-		clocks = <&usart1_mux 0>; //USART1_CLK = APBCLK
-		clock-frequency = <0>;
-	};
+&usart1_mux {
+	zephyr,cms-static-init;
+	input-selection = <0>; //PCLK
+};
 
+&usart1_clk {
 	usart1_on {
 		clock-frequency = <DT_FREQ_M(48)>;
 	};
@@ -262,7 +261,7 @@
 };
 
 &usart1 {
-	clock-state-0 = <&usart1_init>;
+//	clock-state-0 = <&usart1_init>;
 	clock-state-1 = <&usart1_on>;
 	clock-state-2 = <&usart1_off>;
 	clock-state-names = "init", "on", "off";
