@@ -29,8 +29,11 @@ static int stm32_sysclk_prescaler_configure(const struct clk *clk, const void *d
 
 	/* TODO: runtime support */
 	/* TODO: assert factor is valid for HW */
-	/* Prescaler field contains (<division factor> - 1) */
-	stm32_clk_write_field(config->presc_reg_field, prescaler_div_factor - 1);
+	/* Prescaler field contains (<division factor> - 1)
+	 * However, serialization macros already did the correction,
+	 * so we can write the value as-is.
+	 */
+	stm32_clk_write_field(config->presc_reg_field, prescaler_div_factor);
 
 	return 0;
 }
