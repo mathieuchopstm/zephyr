@@ -84,18 +84,24 @@ extern "C" {
 		DT_PHA_BY_IDX(node_id, prop, idx, enable)
 
 
+/*
+ * st,stm32-sysclk-mux is not defined in bindings;
+ * nodes will fall back to st,stm32-clock-multiplexer
+ * for DATA_DEFINE/DATA_GET/INIT_DATA_GET
+ */
 extern void stm32_sysclk_mux_change_hook(bool pre);
+
+#define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_MUX_PRE_INIT(node_id)	\
+	stm32_sysclk_mux_change_hook(true);
+#define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_MUX_POST_INIT(node_id)	\
+	stm32_sysclk_mux_change_hook(false);
+
 
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_DATA_GET(node_id, prop, idx)		\
 		DT_PHA_BY_IDX(node_id, prop, idx, input_selection)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_INIT_DATA_GET(node_id)		\
 		DT_PROP(node_id, input_selection)
-
-#define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_PRE_INIT(node_id)			\
-	stm32_sysclk_mux_change_hook(true);
-#define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_POST_INIT(node_id)		\
-	stm32_sysclk_mux_change_hook(false);
 
 /* Prescaler field contains one less than the desired division factor */
 #define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_DATA_DEFINE(node_id, prop, idx)

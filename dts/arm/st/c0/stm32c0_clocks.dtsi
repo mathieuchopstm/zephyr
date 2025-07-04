@@ -108,7 +108,7 @@
 
 	/* muxes */
 	sysclk_mux: sysclk-mux {
-		compatible = "st,stm32-clock-multiplexer";
+		compatible = "st,stm32-sysclk-mux", "st,stm32-clock-multiplexer";
 		#clock-cells = <1>;
 		zephyr,cms-static-init;
 
