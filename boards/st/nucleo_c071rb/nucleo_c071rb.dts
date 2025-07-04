@@ -196,8 +196,7 @@
 
 &sysclk_mux {
 	/* static configuration here */
-	/* TBD: allow specifying a phandle instead */
-	input-selection = <1>; //HSE
+	input-selection = <&hse>;
 };
 
 &sysclk_div {
@@ -247,7 +246,7 @@
 
 &usart1_mux {
 	zephyr,cms-static-init;
-	input-selection = <0>; //PCLK
+	input-selection = <&pclk>;
 };
 
 &usart1_clk {
