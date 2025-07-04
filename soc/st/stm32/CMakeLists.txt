@@ -8,5 +8,7 @@ if (CONFIG_BUILD_WITH_TFM)
 	)
 endif()
 
+zephyr_library_sources_ifdef(CONFIG_CLOCK_STM32_MCO ${ZEPHYR_BASE}/drivers/clock_control/clock_stm32_mco.c)
+
 add_subdirectory(common)
 add_subdirectory(${SOC_SERIES})
