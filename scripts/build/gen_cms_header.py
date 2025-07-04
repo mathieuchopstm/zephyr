@@ -104,18 +104,27 @@ def main():
     # Sort nodes by compatible and note down which nodes have opted in
     # for static initialization, along with their compatible if so
     nodes_by_compat = {}
+    compats_to_alias = {}
     static_init_nodes = []
     static_init_compats = set()
     for node in clock_nodes:
-        compat = node.matching_compat
+        compat = node.compats[0]
         if not compat in nodes_by_compat:
             nodes_by_compat[compat] = []
+
+        if compat != node.matching_compat:
+            existing_alias = compats_to_alias.get(compat)
+            if existing_alias is None:
+                compats_to_alias[compat] = node.matching_compat
+            elif existing_alias != node.matching_compat:
+                print(f"{node.name}: cannot alias '{compat}' to '{node.matching_compat}'"
+                      f" as it is already aliased to {existing_alias}")
         nodes_by_compat[compat].append(node)
 
         p = node.props.get(STATIC_INIT_PROPERTY_NAME)
         if p is not None and p.val == True:
             static_init_nodes.append(node)
-            static_init_compats.add(node.matching_compat)
+            static_init_compats.add(node.compats[0])
 
     with open(args.header_out, "w") as fp:
         def write_cond_macro(name: str, args: str, value="", required=False):
@@ -145,6 +154,27 @@ def main():
         #   - number of nodes that want static initialization
         write_define("NUM_CLOCKS", len(clock_nodes))
         write_define("NUM_STATIC_INIT_CLOCKS", len(static_init_nodes))
+
+        # Write compatible aliases
+        # Aliases must come beforehand to avoid "macro not defined"
+        # errors in the following blocks. Note that this means an
+        # aliased compatible will never trigger errors, but that's
+        # fine as its underlying compatible will.
+        for aliased, destination in compats_to_alias.items():
+            fp.write(f"\n/* Automatic alias of '{aliased}' to '{destination}' */\n")
+            src = f"Z_CLOCK_MANAGEMENT_{str2ident(aliased).upper()}"
+            dst = f"Z_CLOCK_MANAGEMENT_{str2ident(destination).upper()}"
+
+            def write_alias(macro):
+                write_cond_macro(f"{src}_{macro}", "", value=f"{dst}_{macro}")
+
+            write_alias("DATA_DEFINE")
+            write_alias("DATA_GET")
+            write_alias("PRE_INIT")
+            write_alias("INIT_DATA_DEFINE")
+            write_alias("INIT_DATA_GET")
+            write_alias("POST_INIT")
+        fp.write("\n")
 
         # Write per-compatible stuff:
         #   - assertions checking that required macros are defined
@@ -247,7 +277,7 @@ SYS_INIT(z_cms_perform_static_initialization, PRE_KERNEL_1, 1);
             init_fn_code = ""
             for node in static_init_nodes:
                 init_fn_code += CLOCK_INIT_TEMPLATE.format(
-                    compat=str2ident(node.matching_compat).upper(),
+                    compat=str2ident(node.compats[0]).upper(),
                     node_id=f"DT_{node_z_path_id(node)}",
                     node_path=ct_path(node)
                 ) + "\n"
