@@ -59,8 +59,7 @@
 		clock-frequency = <DT_FREQ_M(48)>;
 
 		hsisys: hsisys {
-			/* This is actually not correct! */
-			compatible = "st,stm32-sysclk-prescaler";
+			compatible = "st,stm32c0-hsisys-div";
 			#clock-cells = <1>;
 			reg-and-field = <RCC_FIELD(CR, 11, 3)>;
 		};
