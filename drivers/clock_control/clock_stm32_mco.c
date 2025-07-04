@@ -33,11 +33,13 @@ static int stm32_mco_init(const struct device *dev)
 	const struct stm32_pclken *pclken = &config->pclken[0];
 	int err;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	err = enabled_clock(pclken->bus);
 	if (err < 0) {
 		/* Attempt to configure a src clock not available or not valid */
 		return err;
 	}
+#endif
 
 	/* MCO source */
 	sys_clear_bits(
