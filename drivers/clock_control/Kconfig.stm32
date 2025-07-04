@@ -93,13 +93,4 @@ config STM32WB0_LSI_RUNTIME_MEASUREMENT_INTERVAL
 
 endmenu # DT_HAS_ST_STM32WB0_LSI_CLOCK_ENABLED
 
-# Micro-controller Clock Output (MCO) configuration options
-config CLOCK_STM32_MCO
-	bool
-	default y
-	depends on DT_HAS_ST_STM32_CLOCK_MCO_ENABLED || DT_HAS_ST_STM32F1_CLOCK_MCO_ENABLED
-	help
-	  Allows to output various different clock sources onto the MCO pin
-	  using a configurable prescaler.
-
 endif # CLOCK_CONTROL_STM32_CUBE
