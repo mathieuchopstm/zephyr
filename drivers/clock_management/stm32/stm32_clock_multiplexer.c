@@ -58,6 +58,10 @@ const struct clock_management_driver_api stm32_clock_mux_api = {
 	CLOCK_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 #define STM32_CLOCK_MUX_DEFINE(inst)						\
+	BUILD_ASSERT(!DT_INST_NODE_HAS_PROP(inst, input_selection) ||		\
+		PHANDLE_IDX_BY_NODE(DT_DRV_INST(inst), inputs,			\
+			DT_INST_PROP(inst, input_selection)) != -1,		\
+		"Invalid input-selection for " DT_NODE_PATH(DT_DRV_INST(inst)));\
 	struct stm32_clock_mux_config stm32_clock_mux_##inst = {		\
 		.mux_reg = STM32_INST_REG_FIELD(inst),				\
 		.parents = {							\

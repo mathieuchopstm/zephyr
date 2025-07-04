@@ -37,8 +37,11 @@ properties:
 
 # static configuration
   input-selection:
-    type: int
-    description: Input to select for static configuration
+    type: phandle
+    description: |
+      Input to select for static configuration
+
+      This must be one of the phandles in the "inputs" property.
 
 clock-cells:
   - input_selection

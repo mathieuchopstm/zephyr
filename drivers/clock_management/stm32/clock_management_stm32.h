@@ -97,11 +97,18 @@ extern void stm32_sysclk_mux_change_hook(bool pre);
 	stm32_sysclk_mux_change_hook(false);
 
 
+#define PHANDLE_IDX_PLUS_ONE_IF_TARGET(node_id, prop, idx, target)	\
+	(DT_SAME_NODE(DT_PROP_BY_IDX(node_id, prop, idx), target) ? (idx + 1) : 0)
+
+#define PHANDLE_IDX_BY_NODE(node_id, prop, target)		\
+	((DT_FOREACH_PROP_ELEM_SEP_VARGS(node_id, prop,	\
+		PHANDLE_IDX_PLUS_ONE_IF_TARGET, (+), target)) - 1)
+
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_DATA_GET(node_id, prop, idx)		\
 		DT_PHA_BY_IDX(node_id, prop, idx, input_selection)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_INIT_DATA_GET(node_id)		\
-		DT_PROP(node_id, input_selection)
+		PHANDLE_IDX_BY_NODE(node_id, inputs, DT_PROP(node_id, input_selection))
 
 /* Prescaler field contains one less than the desired division factor */
 #define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_DATA_DEFINE(node_id, prop, idx)
