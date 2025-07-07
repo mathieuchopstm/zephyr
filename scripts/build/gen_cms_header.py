@@ -108,6 +108,10 @@ def main():
     static_init_nodes = []
     static_init_compats = set()
     for node in clock_nodes:
+        # skip node if not enabled
+        if not node.status == "okay":
+            continue
+
         compat = node.compats[0]
         if not compat in nodes_by_compat:
             nodes_by_compat[compat] = []
