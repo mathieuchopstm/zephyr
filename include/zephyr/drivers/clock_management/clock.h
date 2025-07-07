@@ -125,6 +125,20 @@ struct clk {
  */
 #define CLOCK_DT_GET(node_id) (&CLOCK_DT_NAME_GET(node_id))
 
+/**
+ * @brief Utility macro to obtain an optional reference to a clock.
+ *
+ * If the node identifier refers to a clock node with status `okay`,
+ * this returns `CLOCK_DT_GET(node_id)`. Otherwise, it returns `NULL`.
+ *
+ * @param node_id devicetree node identifier
+ *
+ * @return pointer to the clock object created for that node, which may be `NULL`.
+ */
+#define CLOCK_DT_GET_OR_NULL(node_id)						\
+	COND_CODE_1(DT_NODE_HAS_STATUS_OKAY(node_id),				\
+		    (CLOCK_DT_GET(node_id)), (NULL))
+
 /** @cond INTERNAL_HIDDEN */
 
 /**
