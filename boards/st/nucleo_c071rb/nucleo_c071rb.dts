@@ -257,6 +257,12 @@
 };
 #endif
 
+&spi1 {
+	clock-state-0 = <&spi1_on>;
+	clock-state-1 = <&spi1_off>;
+	clock-state-names = "on", "off";
+};
+
 &usart1_clk {
 #if !USE_STATIC_INIT
 	usart1_init: usart1_init {
