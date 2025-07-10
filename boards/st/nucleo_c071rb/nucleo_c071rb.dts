@@ -259,6 +259,12 @@
 	input-selection = <&pclk>;
 };
 
+&spi1 {
+	clock-state-0 = <&spi1_on>;
+	clock-state-1 = <&spi1_off>;
+	clock-state-names = "on", "off";
+};
+
 &usart1_clk {
 	usart1_on {
 		clock-frequency = <DT_FREQ_M(48)>;
