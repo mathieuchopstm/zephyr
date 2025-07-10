@@ -32,8 +32,15 @@ struct spi_stm32_config {
 	int midi_clocks;
 	int mssi_clocks;
 #endif
+#if defined(CONFIG_CLOCK_CONTROL)
 	size_t pclk_len;
 	const struct stm32_pclken *pclken;
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	const struct clock_output *clock_output;
+	clock_management_state_t clock_init_state;
+	clock_management_state_t clock_on_state;
+	clock_management_state_t clock_off_state;
+#endif
 	bool fifo_enabled;
 };
 
