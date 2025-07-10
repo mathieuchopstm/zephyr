@@ -76,7 +76,7 @@ const struct clock_management_driver_api stm32_clock_mux_api = {
 	IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, input_selection),		\
 		(ASSERT_STATIC_CONFIG(DT_DRV_INST(inst),			\
 			DT_INST_PROP(inst, input_selection))))			\
-	struct stm32_clock_mux_config stm32_clock_mux_##inst = {		\
+	const struct stm32_clock_mux_config stm32_clock_mux_##inst = {		\
 		.mux_reg = STM32_INST_REG_FIELD(inst),				\
 		.parents = {							\
 			DT_INST_FOREACH_PROP_ELEM(inst, inputs, GET_MUX_INPUT)	\
