@@ -170,6 +170,29 @@
 					 *};
 					 */
 
+					spi1_gate: spi1-gate {
+						compatible = "st,stm32-clock-gate";
+						#clock-cells = <1>;
+						reg-and-field = <RCC_BIT(APBENR2, 12)>;
+
+						spi1_clk: clock-output {
+							compatible = "clock-output";
+							#clock-cells = <0>;
+
+							spi1_off: spi1_off {
+								compatible = "clock-state";
+								clocks = <&spi1_gate 0>;
+								clock-frequency = <0>;
+							};
+
+							spi1_on: spi1_on {
+								compatible = "clock-state";
+								clocks = <&spi1_gate 1>;
+								clock-frequency = <0>;
+							};
+						};
+					};
+
 					usart2_gate: usart2-gate {
 						compatible = "st,stm32-clock-gate";
 						#clock-cells = <1>;
@@ -359,3 +382,4 @@
 &gpiof  { clock-outputs = <&gpiof_clk>;  clock-output-names = "default"; };
 &usart1 { clock-outputs = <&usart1_clk>; clock-output-names = "default"; };
 &usart2 { clock-outputs = <&usart2_clk>; clock-output-names = "default"; };
+&spi1	{ clock-outputs = <&spi1_clk>;	 clock-output-names = "default"; };
