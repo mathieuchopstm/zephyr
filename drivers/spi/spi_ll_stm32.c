@@ -29,6 +29,7 @@ LOG_MODULE_REGISTER(spi_ll_stm32);
 #endif
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/drivers/clock_control.h>
+#include <zephyr/drivers/clock_management.h>
 #include <zephyr/irq.h>
 #include <zephyr/mem_mgmt/mem_attr.h>
 #include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
@@ -650,6 +651,7 @@ static int spi_stm32_configure(const struct device *dev,
 #endif
 }
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	if (IS_ENABLED(STM32_SPI_DOMAIN_CLOCK_SUPPORT) && (cfg->pclk_len > 1)) {
 		if (clock_control_get_rate(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE),
 					   (clock_control_subsys_t) &cfg->pclken[1], &clock) < 0) {
@@ -663,6 +665,16 @@ static int spi_stm32_configure(const struct device *dev,
 			return -EIO;
 		}
 	}
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	int rate = clock_management_get_rate(cfg->clock_output);
+
+	if (rate < 0) {
+		LOG_ERR("clock_management_get_rate() failed (%d)", rate);
+		return rate;
+	}
+
+	clock = rate;
+#endif
 
 	for (br = 1 ; br <= ARRAY_SIZE(scaler) ; ++br) {
 		uint32_t clk = clock >> br;
@@ -1406,6 +1418,7 @@ static int spi_stm32_init(const struct device *dev)
 	const struct spi_stm32_config *cfg = dev->config;
 	int err;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	if (!device_is_ready(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE))) {
 		LOG_ERR("clock control device not ready");
 		return -ENODEV;
@@ -1427,6 +1440,22 @@ static int spi_stm32_init(const struct device *dev)
 			return err;
 		}
 	}
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	if (cfg->clock_init_state != exCLOCK_MANAGEMENT_STATE_NONE) {
+		err = clock_management_apply_state(cfg->clock_output, cfg->clock_init_state);
+		if (err < 0) {
+			LOG_ERR("failed to apply SPI configuration state (%d)", err);
+			return err;
+		}
+
+	}
+
+	err = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+	if (err < 0) {
+		LOG_ERR("failed to turn on SPI (%d)", err);
+		return err;
+	}
+#endif
 
 	if (!spi_stm32_is_subghzspi(dev)) {
 		/* Configure dt provided device signals when available */
@@ -1469,6 +1498,7 @@ static int spi_stm32_init(const struct device *dev)
 }
 
 #ifdef CONFIG_PM_DEVICE
+/* TODO: not supported with clk mgmt */
 static int spi_stm32_pm_action(const struct device *dev,
 			       enum pm_device_action action)
 {
@@ -1595,13 +1625,24 @@ STM32_SPI_IRQ_HANDLER_DECL(id);						\
 									\
 PINCTRL_DT_INST_DEFINE(id);						\
 									\
-static const struct stm32_pclken pclken_##id[] =			\
-					       STM32_DT_INST_CLOCKS(id);\
+IF_ENABLED(CONFIG_CLOCK_CONTROL, (					\
+	static const struct stm32_pclken pclken_##id[] =		\
+					STM32_DT_INST_CLOCKS(id);))	\
+									\
+IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (					\
+	CLOCK_MANAGEMENT_DT_INST_DEFINE_OUTPUT(id);))			\
 									\
 static const struct spi_stm32_config spi_stm32_cfg_##id = {		\
 	.spi = (SPI_TypeDef *) DT_INST_REG_ADDR(id),			\
-	.pclken = pclken_##id,						\
-	.pclk_len = DT_INST_NUM_CLOCKS(id),				\
+	IF_ENABLED(CONFIG_CLOCK_CONTROL, (				\
+		.pclken = pclken_##id,					\
+		.pclk_len = DT_INST_NUM_CLOCKS(id),))			\
+	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (				\
+		.clock_output = CLOCK_MANAGEMENT_DT_INST_GET_OUTPUT(id),			\
+		.clock_init_state = exCLOCK_MANAGEMENT_DT_INST_GET_STATE_OR(			\
+			id, default, init, exCLOCK_MANAGEMENT_STATE_NONE),			\
+		.clock_off_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(id, default, off),	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(id, default, on),))	\
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(id),			\
 	.fifo_enabled = SPI_FIFO_ENABLED(id),				\
 	STM32_SPI_IRQ_HANDLER_FUNC(id)					\
