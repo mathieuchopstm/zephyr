@@ -85,11 +85,12 @@ int i2c_stm32_runtime_configure(const struct device *dev, uint32_t config)
 {
 	const struct i2c_stm32_config *cfg = dev->config;
 	struct i2c_stm32_data *data = dev->data;
-	const struct device *clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	__maybe_unused const struct device *clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 	I2C_TypeDef *i2c = cfg->i2c;
 	uint32_t i2c_clock = 0U;
 	int ret;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	if (IS_ENABLED(STM32_I2C_DOMAIN_CLOCK_SUPPORT) && (cfg->pclk_len > 1)) {
 		if (clock_control_get_rate(clk, (clock_control_subsys_t)&cfg->pclken[1],
 					   &i2c_clock) < 0) {
@@ -103,6 +104,16 @@ int i2c_stm32_runtime_configure(const struct device *dev, uint32_t config)
 			return -EIO;
 		}
 	}
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	ret = clock_management_get_rate(cfg->clock_output);
+
+	if (ret < 0) {
+		LOG_ERR("clock_management_get_rate() failed (%d)", ret);
+		return ret;
+	}
+
+	i2c_clock = ret;
+#endif
 
 	data->dev_config = config;
 
@@ -362,7 +373,7 @@ static int i2c_stm32_activate(const struct device *dev)
 {
 	int ret;
 	const struct i2c_stm32_config *cfg = dev->config;
-	const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	__maybe_unused const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 
 	/* Move pins to active/default state */
 	ret = pinctrl_apply_state(cfg->pcfg, PINCTRL_STATE_DEFAULT);
@@ -371,12 +382,21 @@ static int i2c_stm32_activate(const struct device *dev)
 		return ret;
 	}
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	/* Enable device clock. */
 	if (clock_control_on(clk,
 			     (clock_control_subsys_t) &cfg->pclken[0]) != 0) {
 		LOG_ERR("i2c: failure enabling clock");
 		return -EIO;
 	}
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	int err = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+
+	if (err < 0) {
+		LOG_ERR("failed to turn on I2C clock (%d)", err);
+		return err;
+	}
+#endif
 
 	return 0;
 }
@@ -384,7 +404,7 @@ static int i2c_stm32_activate(const struct device *dev)
 
 static int i2c_stm32_init(const struct device *dev)
 {
-	const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	__maybe_unused const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 	const struct i2c_stm32_config *cfg = dev->config;
 	uint32_t bitrate_cfg;
 	int ret;
@@ -404,13 +424,27 @@ static int i2c_stm32_init(const struct device *dev)
 	 */
 	k_sem_init(&data->bus_mutex, 1, 1);
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	if (!device_is_ready(clk)) {
 		LOG_ERR("clock control device not ready");
 		return -ENODEV;
 	}
+#endif
+
+#if defined(CONFIG_CLOCK_MANAGEMENT)
+	if (cfg->clock_init_state != exCLOCK_MANAGEMENT_STATE_NONE) {
+		ret = clock_management_apply_state(cfg->clock_output, cfg->clock_init_state);
+		if (ret < 0) {
+			LOG_ERR("failed to apply SPI configuration state (%d)", ret);
+			return ret;
+		}
+
+	}
+#endif
 
 	i2c_stm32_activate(dev);
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	if (IS_ENABLED(STM32_I2C_DOMAIN_CLOCK_SUPPORT) && (cfg->pclk_len > 1)) {
 		/* Enable I2C clock source */
 		ret = clock_control_configure(clk,
@@ -420,6 +454,7 @@ static int i2c_stm32_init(const struct device *dev)
 			return -EIO;
 		}
 	}
+#endif
 
 #if defined(CONFIG_SOC_SERIES_STM32F1X)
 	/*
@@ -655,13 +690,24 @@ IF_ENABLED(DT_HAS_COMPAT_STATUS_OKAY(st_stm32_i2c_v2),			\
 									\
 PINCTRL_DT_INST_DEFINE(index);						\
 									\
+IF_ENABLED(CONFIG_CLOCK_CONTROL, (					\
 static const struct stm32_pclken pclken_##index[] =			\
-				 STM32_DT_INST_CLOCKS(index);		\
+				 STM32_DT_INST_CLOCKS(index);))		\
+									\
+IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (					\
+	CLOCK_MANAGEMENT_DT_INST_DEFINE_OUTPUT(index);))		\
 									\
 static const struct i2c_stm32_config i2c_stm32_cfg_##index = {		\
 	.i2c = (I2C_TypeDef *)DT_INST_REG_ADDR(index),			\
-	.pclken = pclken_##index,					\
-	.pclk_len = DT_INST_NUM_CLOCKS(index),				\
+	IF_ENABLED(CONFIG_CLOCK_CONTROL, (				\
+		.pclken = pclken_##index,				\
+		.pclk_len = DT_INST_NUM_CLOCKS(index),))		\
+	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (				\
+		.clock_output = CLOCK_MANAGEMENT_DT_INST_GET_OUTPUT(index),			\
+		.clock_init_state = exCLOCK_MANAGEMENT_DT_INST_GET_STATE_OR(			\
+			index, default, init, exCLOCK_MANAGEMENT_STATE_NONE),			\
+		.clock_off_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, off),	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, on),))	\
 	STM32_I2C_IRQ_HANDLER_FUNCTION(index)				\
 	.bitrate = DT_INST_PROP(index, clock_frequency),		\
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),			\

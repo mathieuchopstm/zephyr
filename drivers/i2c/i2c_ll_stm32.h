@@ -10,6 +10,7 @@
 #define ZEPHYR_DRIVERS_I2C_I2C_LL_STM32_H_
 
 #include <zephyr/drivers/i2c/stm32.h>
+#include <zephyr/drivers/clock_management.h>
 
 #ifdef CONFIG_I2C_STM32_BUS_RECOVERY
 #include <zephyr/drivers/gpio.h>
@@ -48,8 +49,15 @@ struct i2c_stm32_config {
 	struct gpio_dt_spec scl;
 	struct gpio_dt_spec sda;
 #endif /* CONFIG_I2C_STM32_BUS_RECOVERY */
+#if defined(CONFIG_CLOCK_CONTROL)
 	const struct stm32_pclken *pclken;
 	size_t pclk_len;
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	const struct clock_output *clock_output;
+	clock_management_state_t clock_init_state;
+	clock_management_state_t clock_on_state;
+	clock_management_state_t clock_off_state;
+#endif
 	I2C_TypeDef *i2c;
 	uint32_t bitrate;
 	const struct pinctrl_dev_config *pcfg;
