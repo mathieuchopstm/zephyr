@@ -215,6 +215,28 @@
 						};
 					};
 
+					i2c2_gate: i2c2-gate {
+						compatible = "st,stm32-clock-gate";
+						#clock-cells = <1>;
+						reg-and-field = <RCC_BIT(APBENR1, 22)>;
+
+						i2c2_clk: clock-output {
+							compatible = "clock-output";
+							#clock-cells = <0>;
+
+							i2c2_off: i2c2_off {
+								compatible = "clock-state";
+								clocks = <&i2c2_gate 0>;
+								clock-frequency = <0>;
+							};
+
+							i2c2_on: i2c2_on {
+								compatible = "clock-state";
+								clocks = <&i2c2_gate 1>;
+								clock-frequency = <0>;
+							};
+						};
+					};
 				};
 
 				/**
@@ -372,6 +394,39 @@
 			};
 		};
 	};
+
+	i2c1_mux: i2c1-mux {
+		compatible = "st,stm32-clock-multiplexer";
+		#clock-cells = <1>;
+
+		reg-and-field = <RCC_FIELD(CCIPR, 12, 2)>;
+		inputs = /* 0b00: */<&pclk>,
+			 /* 0b01: */<&sysclk>,
+			 /* 0b10: */<&hsiker>;
+			 /* 0b11: Reserved */
+
+		i2c1_gate: i2c1-gate {
+			compatible = "st,stm32-clock-gate";
+			#clock-cells = <1>;
+			reg-and-field = <RCC_BIT(APBENR1, 21)>;
+
+			i2c1_clk: clock-output {
+				compatible = "clock-output";
+				#clock-cells = <0>;
+
+				i2c1_off: i2c1_off {
+					compatible = "clock-state";
+					clocks = <&i2c1_gate 0>;
+					clock-frequency = <0>;
+				};
+
+				i2c1_on: i2c1_on {
+					compatible = "clock-state";
+					clocks = <&i2c1_gate 1>;
+				};
+			};
+		};
+	};
 };
 
 /* These should be in main DTSI but are placed here to avoid touching it */
@@ -383,3 +438,5 @@
 &usart1 { clock-outputs = <&usart1_clk>; clock-output-names = "default"; };
 &usart2 { clock-outputs = <&usart2_clk>; clock-output-names = "default"; };
 &spi1	{ clock-outputs = <&spi1_clk>;	 clock-output-names = "default"; };
+&i2c1	{ clock-outputs = <&i2c1_clk>;   clock-output-names = "default"; };
+&i2c2	{ clock-outputs = <&i2c2_clk>;   clock-output-names = "default"; };
