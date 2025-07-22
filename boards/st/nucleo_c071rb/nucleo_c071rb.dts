@@ -257,6 +257,11 @@
 };
 #endif
 
+&i2c1_mux {
+	zephyr,cms-static-init;
+	input-selection = <&pclk>;
+};
+
 &spi1 {
 	clock-state-0 = <&spi1_on>;
 	clock-state-1 = <&spi1_off>;
@@ -293,5 +298,25 @@
 &usart2 {
 	clock-state-0 = <&usart2_on>;
 	clock-state-1 = <&usart2_off>;
+	clock-state-names = "on", "off";
+};
+
+&i2c1_on {
+	clock-frequency = <DT_FREQ_M(48)>;
+};
+
+&i2c1 {
+	clock-state-1 = <&i2c1_on>;
+	clock-state-2 = <&i2c1_off>;
+	clock-state-names = "init", "on", "off";
+};
+
+&i2c2_on {
+	clock-frequency = <DT_FREQ_M(48)>;
+};
+
+&i2c2 {
+	clock-state-0 = <&i2c2_on>;
+	clock-state-1 = <&i2c2_off>;
 	clock-state-names = "on", "off";
 };
