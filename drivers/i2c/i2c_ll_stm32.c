@@ -103,7 +103,7 @@ int i2c_stm32_runtime_configure(const struct device *dev, uint32_t config)
 {
 	const struct i2c_stm32_config *cfg = dev->config;
 	struct i2c_stm32_data *data = dev->data;
-	const struct device *clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	__maybe_unused const struct device *clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 	I2C_TypeDef *i2c = cfg->i2c;
 	uint32_t i2c_clock = 0U;
 	int ret;
@@ -391,7 +391,7 @@ static int i2c_stm32_activate(const struct device *dev)
 {
 	int ret;
 	const struct i2c_stm32_config *cfg = dev->config;
-	const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	__maybe_unused const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 
 	/* Move pins to active/default state */
 	ret = pinctrl_apply_state(cfg->pcfg, PINCTRL_STATE_DEFAULT);
@@ -422,7 +422,7 @@ static int i2c_stm32_activate(const struct device *dev)
 
 static int i2c_stm32_init(const struct device *dev)
 {
-	const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
+	__maybe_unused const struct device *const clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 	const struct i2c_stm32_config *cfg = dev->config;
 	uint32_t bitrate_cfg;
 	int ret;
