@@ -1,0 +1,39 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 timer frequency multiplier
+
+compatible: "st,stm32-timer-freqmul"
+
+include: [clock-node.yaml]
+
+properties:
+  apbpre-loc:
+    required: true
+    type: array
+    description: |
+      APBPRE field corresponding to the bus on
+      which this frequency multiplier is connected
+
+      Three elements:
+        [0]: RCC register address
+        [1]: offset of configuration field
+        [2]: size of configuration field
+
+  timpre-loc:
+    type: array
+    description: |
+      TIMPRE field in RCC
+
+      Three elements:
+        [0]: RCC register address
+        [1]: offset of configuration field
+        [2]: size of configuration field
+
+      If this property is absent, a fixed 2x multiplication factor is assumed.
+      If this property is present, the behavior depends on field size:
+        - 1 bit: 2x if TIMPRE=0b0, 4x if TIMPRE=0b1
+        - 2 bit: (to be supported)
+
+  "#clock-cells":
+    const: 0

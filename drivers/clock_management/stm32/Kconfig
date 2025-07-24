@@ -60,6 +60,13 @@ config CLOCK_MANAGEMENT_STM32_SYSCLK_PRESCALER
 	help
 	  Driver for STM32 SYSCLK prescaler
 
+config CLOCK_MANAGEMENT_STM32_TIMER_FREQMUL
+	bool "STM32 timer frequency multiplier driver"
+	default y
+	depends on DT_HAS_ST_STM32_TIMER_FREQMUL_ENABLED
+	help
+	  Driver for STM32 timer frequency multiplier
+
 config CLOCK_MANAGEMENT_STM32C0_HSISYS_DIV
 	bool "STM32C0 HSISYS divider driver"
 	default y
