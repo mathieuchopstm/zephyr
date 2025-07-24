@@ -21,6 +21,7 @@
 #include <zephyr/init.h>
 
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
+#include <zephyr/drivers/clock_management.h>
 #include <zephyr/dt-bindings/pwm/stm32_pwm.h>
 
 #include <zephyr/logging/log.h>
@@ -90,7 +91,13 @@ struct pwm_stm32_config {
 	TIM_TypeDef *timer;
 	uint32_t prescaler;
 	uint32_t countermode;
+#if defined(CONFIG_CLOCK_CONTROL)
 	struct stm32_pclken pclken;
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	const struct clock_output *clock_output;
+	clock_management_state_t clock_on_state;
+	clock_management_state_t clock_off_state;
+#endif
 	const struct pinctrl_dev_config *pcfg;
 #ifdef CONFIG_PWM_CAPTURE
 	void (*irq_config_func)(const struct device *dev);
@@ -211,7 +218,7 @@ static inline bool is_center_aligned(const uint32_t ll_countermode)
 		(ll_countermode == LL_TIM_COUNTERMODE_CENTER_UP) ||
 		(ll_countermode == LL_TIM_COUNTERMODE_CENTER_UP_DOWN));
 }
-
+#if defined(CONFIG_CLOCK_CONTROL)
 /**
  * Obtain timer clock speed.
  *
@@ -314,6 +321,7 @@ static int get_tim_clk(const struct stm32_pclken *pclken, uint32_t *tim_clk)
 
 	return 0;
 }
+#endif
 
 static int pwm_stm32_set_cycles(const struct device *dev, uint32_t channel,
 				uint32_t period_cycles, uint32_t pulse_cycles,
@@ -783,9 +791,10 @@ static int pwm_stm32_init(const struct device *dev)
 	const struct pwm_stm32_config *cfg = dev->config;
 
 	int r;
-	const struct device *clk;
+	__maybe_unused const struct device *clk;
 	LL_TIM_InitTypeDef init;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	/* enable clock and store its speed */
 	clk = DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE);
 
@@ -805,6 +814,21 @@ static int pwm_stm32_init(const struct device *dev)
 		LOG_ERR("Could not obtain timer clock (%d)", r);
 		return r;
 	}
+#elif (CONFIG_CLOCK_MANAGEMENT)
+	r = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+	if (r < 0) {
+		LOG_ERR("failed to turn on TIM clock (%d)", r);
+		return r;
+	}
+
+	r = clock_management_get_rate(cfg->clock_output);
+	if (r < 0) {
+		LOG_ERR("clock_management_get_rate() failed (%d)", r);
+		return r;
+	}
+
+	data->tim_clk = r;
+#endif
 
 	/* Reset timer to default state using RCC */
 	(void)reset_line_toggle_dt(&data->reset);
@@ -900,7 +924,12 @@ static void pwm_stm32_irq_config_func_##index(const struct device *dev)		\
 		.timer = (TIM_TypeDef *)DT_REG_ADDR(PWM(index)),	       \
 		.prescaler = DT_PROP(PWM(index), st_prescaler),		       \
 		.countermode = DT_PROP(PWM(index), st_countermode),	       \
-		.pclken = DT_INST_CLK(index, timer),                           \
+	IF_ENABLED(CONFIG_CLOCK_CONTROL, (					\
+		.pclken = DT_INST_CLK(index, timer),))                          \
+	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (					\
+		.clock_output = CLOCK_MANAGEMENT_DT_GET_OUTPUT(PWM(index)),			\
+		.clock_off_state = CLOCK_MANAGEMENT_DT_GET_STATE(PWM(index), default, off),	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(PWM(index), default, on),))	\
 		.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),		       \
 		CAPTURE_INIT(index)					       \
 	};                                                                     \
