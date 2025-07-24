@@ -29,6 +29,25 @@ struct stm32_reg_field {
 	}
 
 /**
+ * Transform property @p prop of @p node into struct stm32_reg_field.
+ *
+ * Property is an array with two or three elements:
+ *	[0]: address of RCC register
+ *	[1]: offset to first bit (LSB) of field
+ *	[2]: number of bits in field
+ * A default field size of 1 (single-bit field) is assumed when the
+ * property has only two elements.
+ */
+#define STM32_NODE_REG_FIELD_FROM_PROP(node, prop_name)			\
+	STM32_REG_FIELD_INIT(						\
+		DT_PROP_BY_IDX(node, prop_name, 0),			\
+		DT_PROP_BY_IDX(node, prop_name, 1),			\
+		COND_CODE_1(DT_PROP_HAS_IDX(node, prop_name, 2),	\
+			(DT_PROP_BY_IDX(node, prop_name, 2)),		\
+			(1))						\
+		)
+
+/**
  * Transform `reg-and-field` property of @p node into stm32_reg_field.
  *
  * Property is an array with two or three elements:
@@ -39,17 +58,14 @@ struct stm32_reg_field {
  * property has only two elements.
  */
 #define STM32_NODE_REG_FIELD(node)					\
-	STM32_REG_FIELD_INIT(						\
-		DT_PROP_BY_IDX(node, reg_and_field, 0),			\
-		DT_PROP_BY_IDX(node, reg_and_field, 1),			\
-		COND_CODE_1(DT_PROP_HAS_IDX(node, reg_and_field, 2),	\
-			(DT_PROP_BY_IDX(node, reg_and_field, 2)),	\
-			(1))						\
-		)
+	STM32_NODE_REG_FIELD_FROM_PROP(node, reg_and_field)
 
 #define STM32_NODE_REG_BIT(node, _bit_prop_name)			\
 	STM32_REG_FIELD_INIT(						\
 		DT_PROP(node, rcc_reg), DT_PROP(node, _bit_prop_name), 1)
+
+#define STM32_INST_REG_FIELD_FROM_PROP(inst, prop_name)			\
+	STM32_NODE_REG_FIELD_FROM_PROP(DT_DRV_INST(inst), prop_name)
 
 #define STM32_INST_REG_FIELD(inst)					\
 	STM32_NODE_REG_FIELD(DT_DRV_INST(inst))
