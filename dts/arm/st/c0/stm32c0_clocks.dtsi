@@ -164,11 +164,173 @@
 					#clock-cells = <1>;
 					zephyr,cms-static-init;
 
-					/* TODO: implement this
-					 * timpclk: tim_prescaler: clock {
-					 *	compatible = "st,timer-prescaler";
-					 *};
-					 */
+					timpclk: tim_freqmul: tim-freqmul {
+						compatible = "st,stm32-timer-freqmul";
+						apbpre-loc = <RCC_FIELD(CFGR, 12, 3)>;
+						#clock-cells = <0>;
+						/* no TIMPRE on STM32C0 */
+
+						tim1_gate: tim1-gate {
+							compatible = "st,stm32-clock-gate";
+							#clock-cells = <1>;
+							reg-and-field = <RCC_BIT(APBENR2, 11)>;
+
+							tim1_clk: clock-output {
+								compatible = "clock-output";
+								#clock-cells = <0>;
+
+								tim1_off: tim1-off {
+									compatible = "clock-state";
+									clocks = <&tim1_gate 0>;
+									clock-frequency = <0>;
+								};
+
+								tim1_on: tim1-on {
+									compatible = "clock-state";
+									clocks = <&tim1_gate 1>;
+									clock-frequency = <0>;
+								};
+							};
+						};
+
+						tim2_gate: tim2-gate {
+							compatible = "st,stm32-clock-gate";
+							#clock-cells = <1>;
+							reg-and-field = <RCC_BIT(APBENR1, 0)>;
+
+							tim2_clk: clock-output {
+								compatible = "clock-output";
+								#clock-cells = <0>;
+
+								tim2_off: tim2-off {
+									compatible = "clock-state";
+									clocks = <&tim2_gate 0>;
+									clock-frequency = <0>;
+								};
+
+								tim2_on: tim2-on {
+									compatible = "clock-state";
+									clocks = <&tim2_gate 1>;
+									clock-frequency = <0>;
+								};
+							};
+						};
+
+						tim3_gate: tim3-gate {
+							compatible = "st,stm32-clock-gate";
+							#clock-cells = <1>;
+							reg-and-field = <RCC_BIT(APBENR1, 1)>;
+
+							tim3_clk: clock-output {
+								compatible = "clock-output";
+								#clock-cells = <0>;
+
+								tim3_off: tim3-off {
+									compatible = "clock-state";
+									clocks = <&tim3_gate 0>;
+									clock-frequency = <0>;
+								};
+
+								tim3_on: tim3-on {
+									compatible = "clock-state";
+									clocks = <&tim3_gate 1>;
+									clock-frequency = <0>;
+								};
+							};
+						};
+
+						tim14_gate: tim14-gate {
+							compatible = "st,stm32-clock-gate";
+							#clock-cells = <1>;
+							reg-and-field = <RCC_BIT(APBENR2, 15)>;
+
+							tim14_clk: clock-output {
+								compatible = "clock-output";
+								#clock-cells = <0>;
+
+								tim14_off: tim14-off {
+									compatible = "clock-state";
+									clocks = <&tim14_gate 0>;
+									clock-frequency = <0>;
+								};
+
+								tim14_on: tim14-on {
+									compatible = "clock-state";
+									clocks = <&tim14_gate 1>;
+									clock-frequency = <0>;
+								};
+							};
+						};
+
+						tim15_gate: tim15-gate {
+							compatible = "st,stm32-clock-gate";
+							#clock-cells = <1>;
+							reg-and-field = <RCC_BIT(APBENR2, 16)>;
+
+							tim15_clk: clock-output {
+								compatible = "clock-output";
+								#clock-cells = <0>;
+
+								tim15_off: tim15-off {
+									compatible = "clock-state";
+									clocks = <&tim15_gate 0>;
+									clock-frequency = <0>;
+								};
+
+								tim15_on: tim15-on {
+									compatible = "clock-state";
+									clocks = <&tim15_gate 1>;
+									clock-frequency = <0>;
+								};
+							};
+						};
+
+						tim16_gate: tim16-gate {
+							compatible = "st,stm32-clock-gate";
+							#clock-cells = <1>;
+							reg-and-field = <RCC_BIT(APBENR2, 17)>;
+
+							tim16_clk: clock-output {
+								compatible = "clock-output";
+								#clock-cells = <0>;
+
+								tim16_off: tim16-off {
+									compatible = "clock-state";
+									clocks = <&tim16_gate 0>;
+									clock-frequency = <0>;
+								};
+
+								tim16_on: tim16-on {
+									compatible = "clock-state";
+									clocks = <&tim16_gate 1>;
+									clock-frequency = <0>;
+								};
+							};
+						};
+
+						tim17_gate: tim17-gate {
+							compatible = "st,stm32-clock-gate";
+							#clock-cells = <1>;
+							reg-and-field = <RCC_BIT(APBENR2, 18)>;
+
+							tim17_clk: clock-output {
+								compatible = "clock-output";
+								#clock-cells = <0>;
+
+								tim17_off: tim17-off {
+									compatible = "clock-state";
+									clocks = <&tim17_gate 0>;
+									clock-frequency = <0>;
+								};
+
+								tim17_on: tim17-on {
+									compatible = "clock-state";
+									clocks = <&tim17_gate 1>;
+									clock-frequency = <0>;
+								};
+							};
+						};
+					};
 
 					spi1_gate: spi1-gate {
 						compatible = "st,stm32-clock-gate";
@@ -430,13 +592,20 @@
 };
 
 /* These should be in main DTSI but are placed here to avoid touching it */
-&gpioa  { clock-outputs = <&gpioa_clk>;  clock-output-names = "default"; };
-&gpiob  { clock-outputs = <&gpiob_clk>;  clock-output-names = "default"; };
-&gpioc  { clock-outputs = <&gpioc_clk>;  clock-output-names = "default"; };
-&gpiod  { clock-outputs = <&gpiod_clk>;  clock-output-names = "default"; };
-&gpiof  { clock-outputs = <&gpiof_clk>;  clock-output-names = "default"; };
-&usart1 { clock-outputs = <&usart1_clk>; clock-output-names = "default"; };
-&usart2 { clock-outputs = <&usart2_clk>; clock-output-names = "default"; };
-&spi1	{ clock-outputs = <&spi1_clk>;	 clock-output-names = "default"; };
-&i2c1	{ clock-outputs = <&i2c1_clk>;   clock-output-names = "default"; };
-&i2c2	{ clock-outputs = <&i2c2_clk>;   clock-output-names = "default"; };
+&gpioa    { clock-outputs = <&gpioa_clk>;  clock-output-names = "default"; };
+&gpiob    { clock-outputs = <&gpiob_clk>;  clock-output-names = "default"; };
+&gpioc    { clock-outputs = <&gpioc_clk>;  clock-output-names = "default"; };
+&gpiod    { clock-outputs = <&gpiod_clk>;  clock-output-names = "default"; };
+&gpiof    { clock-outputs = <&gpiof_clk>;  clock-output-names = "default"; };
+&usart1   { clock-outputs = <&usart1_clk>; clock-output-names = "default"; };
+&usart2   { clock-outputs = <&usart2_clk>; clock-output-names = "default"; };
+&spi1     { clock-outputs = <&spi1_clk>;   clock-output-names = "default"; };
+&i2c1     { clock-outputs = <&i2c1_clk>;   clock-output-names = "default"; };
+&i2c2     { clock-outputs = <&i2c2_clk>;   clock-output-names = "default"; };
+&timers1  { clock-outputs = <&tim1_clk>;   clock-output-names = "default"; };
+&timers2  { clock-outputs = <&tim2_clk>;   clock-output-names = "default"; };
+&timers3  { clock-outputs = <&tim3_clk>;   clock-output-names = "default"; };
+&timers14 { clock-outputs = <&tim14_clk>;  clock-output-names = "default"; };
+/* &timers15 { clock-outputs = <&tim15_clk>;   clock-output-names = "default"; }; */
+&timers16 { clock-outputs = <&tim16_clk>;  clock-output-names = "default"; };
+&timers17 { clock-outputs = <&tim17_clk>;  clock-output-names = "default"; };
