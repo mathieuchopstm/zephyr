@@ -7,6 +7,7 @@
 #define DT_DRV_COMPAT st_stm32_counter
 
 #include <zephyr/drivers/counter.h>
+#include <zephyr/drivers/clock_management.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/drivers/reset.h>
 #include <zephyr/irq.h>
@@ -104,7 +105,13 @@ struct counter_stm32_config {
 	struct counter_stm32_ch_data *ch_data;
 	TIM_TypeDef *timer;
 	uint32_t prescaler;
+#if defined(CONFIG_CLOCK_CONTROL)
 	struct stm32_pclken pclken;
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	const struct clock_output *clock_output;
+	clock_management_state_t clock_on_state;
+	clock_management_state_t clock_off_state;
+#endif
 	void (*irq_config_func)(const struct device *dev);
 	uint32_t irqn;
 	/* Reset controller device configuration */
@@ -355,6 +362,7 @@ static uint32_t counter_stm32_get_pending_int(const struct device *dev)
 	return !!pending;
 }
 
+#if defined(CONFIG_CLOCK_CONTROL)
 /**
  * Obtain timer clock speed.
  *
@@ -462,6 +470,7 @@ static int counter_stm32_get_tim_clk(const struct stm32_pclken *pclken, uint32_t
 
 	return 0;
 }
+#endif
 
 static int counter_stm32_init_timer(const struct device *dev)
 {
@@ -472,6 +481,7 @@ static int counter_stm32_init_timer(const struct device *dev)
 	uint32_t tim_clk;
 	int r;
 
+#if defined(CONFIG_CLOCK_CONTROL)
 	/* initialize clock and check its speed  */
 	r = clock_control_on(DEVICE_DT_GET(STM32_CLOCK_CONTROL_NODE),
 			     (clock_control_subsys_t)&cfg->pclken);
@@ -485,6 +495,22 @@ static int counter_stm32_init_timer(const struct device *dev)
 		return r;
 	}
 	data->freq = tim_clk / (cfg->prescaler + 1U);
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+	r = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+	if (r < 0) {
+		LOG_ERR("Failed to turn on TIM clock (%d)", r);
+		return r;
+	}
+
+	r = clock_management_get_rate(cfg->clock_output);
+	if (r < 0) {
+		LOG_ERR("clock_management_get_rate() failed (%d)", r);
+		return r;
+	}
+
+	tim_clk = r;
+	data->freq = tim_clk / (cfg->prescaler + 1U);
+#endif
 
 	if (!device_is_ready(cfg->reset.dev)) {
 		LOG_ERR("reset controller not ready");
@@ -662,10 +688,15 @@ void counter_stm32_irq_handler(const struct device *dev)
 		.ch_data = counter##idx##_ch_data,				  \
 		.timer = TIM(idx),						  \
 		.prescaler = DT_PROP(TIMER(idx), st_prescaler),			  \
+		IF_ENABLED(CONFIG_CLOCK_CONTROL, (						\
 		.pclken = {							  \
 			.bus = DT_CLOCKS_CELL(TIMER(idx), bus),			  \
 			.enr = DT_CLOCKS_CELL(TIMER(idx), bits)			  \
-		},								  \
+		},))								  \
+		IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (						\
+		.clock_output = CLOCK_MANAGEMENT_DT_GET_OUTPUT(TIMER(idx)),			\
+		.clock_off_state = CLOCK_MANAGEMENT_DT_GET_STATE(TIMER(idx), default, off),	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(TIMER(idx), default, on),))	\
 		.irq_config_func = counter_##idx##_stm32_irq_config,		  \
 		.irqn = DT_IRQN(TIMER(idx)),					  \
 		.reset = RESET_DT_SPEC_GET(TIMER(idx)),				  \
