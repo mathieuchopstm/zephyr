@@ -303,8 +303,8 @@
 			reg = <0x40012C00 0x400>;
 			clocks = <&rcc STM32_CLOCK(APB1_2, 11U)>;
 			resets = <&rctl STM32_RESET(APB1H, 11U)>;
-			interrupts = <13 0>, <14 0>;
-			interrupt-names = "brk_up_trg_com", "cc";
+			interrupts = <14 0>, <13 0>;
+			interrupt-names = "cc", "brk_up_trg_com";
 			st,prescaler = <0>;
 			status = "disabled";
 
@@ -312,6 +312,11 @@
 				compatible = "st,stm32-pwm";
 				status = "disabled";
 				#pwm-cells = <3>;
+			};
+
+			counter {
+				compatible = "st,stm32-counter";
+				status = "disabled";
 			};
 		};
 
