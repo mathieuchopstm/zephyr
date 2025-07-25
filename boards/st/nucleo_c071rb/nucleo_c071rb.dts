@@ -320,3 +320,39 @@
 	clock-state-1 = <&i2c2_off>;
 	clock-state-names = "on", "off";
 };
+
+&timers1 {
+	clock-state-0 = <&tim1_on>;
+	clock-state-1 = <&tim1_off>;
+	clock-state-names = "on", "off";
+};
+
+&timers2 {
+	clock-state-0 = <&tim2_on>;
+	clock-state-1 = <&tim2_off>;
+	clock-state-names = "on", "off";
+};
+
+&timers3 {
+	clock-state-0 = <&tim3_on>;
+	clock-state-1 = <&tim3_off>;
+	clock-state-names = "on", "off";
+};
+
+&timers14 {
+	clock-state-0 = <&tim14_on>;
+	clock-state-1 = <&tim14_off>;
+	clock-state-names = "on", "off";
+};
+
+&timers16 {
+	clock-state-0 = <&tim16_on>;
+	clock-state-1 = <&tim16_off>;
+	clock-state-names = "on", "off";
+};
+
+&timers17 {
+	clock-state-0 = <&tim17_on>;
+	clock-state-1 = <&tim17_off>;
+	clock-state-names = "on", "off";
+};
