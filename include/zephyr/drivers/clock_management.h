@@ -372,6 +372,15 @@ struct clock_output {
 	CLOCK_MANAGEMENT_DT_GET_OUTPUT(DT_DRV_INST(inst))
 
 /**
+ * Gets the node ID of a clock state from a "clock-state-n" property
+ * named @p state_name for clock output @p output_name on node @p dev_id
+ */
+#define Z_CLOCK_MANAGEMENT_CLKDEV_STATE_NODE(dev_id, output_name, state_name)		\
+	DT_PHANDLE_BY_IDX(dev_id,							\
+		CONCAT(clock_state_, DT_CLOCK_STATE_NAME_IDX(dev_id, state_name)),	\
+		DT_CLOCK_OUTPUT_NAME_IDX(dev_id, output_name))
+
+/**
  * @brief Get a clock state identifier from a "clock-state-n" property
  *
  * Gets a clock state identifier from a "clock-state-n" property, given
@@ -428,9 +437,25 @@ struct clock_output {
  * @param state_name Name of clock state to get for this clock output
  */
 #define CLOCK_MANAGEMENT_DT_GET_STATE(dev_id, output_name, state_name)               \
-	DT_NODE_CHILD_IDX(DT_PHANDLE_BY_IDX(dev_id, CONCAT(clock_state_,       \
-		DT_CLOCK_STATE_NAME_IDX(dev_id, state_name)),                  \
-		DT_CLOCK_OUTPUT_NAME_IDX(dev_id, output_name)))
+	DT_NODE_CHILD_IDX(								\
+		Z_CLOCK_MANAGEMENT_CLKDEV_STATE_NODE(dev_id, output_name, state_name))
+
+/**
+ * Does @p dev_id have a clock-output named @p output_name and
+ * a clock-state named @p state_name ? Expands to 0 or 1
+ */
+#define exCLOCK_MANAGEMENT_DT_HAS_STATE(dev_id, output_name, state_name)		\
+	DT_NODE_EXISTS(									\
+		Z_CLOCK_MANAGEMENT_CLKDEV_STATE_NODE(dev_id, output_name, state_name))
+
+/**
+ * Same as CLOCK_MANAGEMENT_DT_GET_STATE() but returns @p if_nostate
+ * if @p dev_id does not have output and state requested
+ */
+#define exCLOCK_MANAGEMENT_DT_GET_STATE_OR(dev_id, output_name, state_name, if_nostate)	\
+	COND_CODE_1(exCLOCK_MANAGEMENT_DT_HAS_STATE(dev_id, output_name, state_name),	\
+		(CLOCK_MANAGEMENT_DT_GET_STATE(dev_id, output_name, state_name)),	\
+		(if_nostate))
 
 /**
  * @brief Get a clock state identifier from a "clock-state-n" property
@@ -444,6 +469,9 @@ struct clock_output {
  */
 #define CLOCK_MANAGEMENT_DT_INST_GET_STATE(inst, output_name, state_name)            \
 	CLOCK_MANAGEMENT_DT_GET_STATE(DT_DRV_INST(inst), output_name, state_name)
+
+#define exCLOCK_MANAGEMENT_DT_INST_GET_STATE_OR(inst, output_name, state_name, if_nostate)	\
+	exCLOCK_MANAGEMENT_DT_GET_STATE_OR(DT_DRV_INST(inst), output_name, state_name, if_nostate)
 
 /**
  * @brief Get clock rate for given output
