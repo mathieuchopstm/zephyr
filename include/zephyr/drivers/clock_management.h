@@ -45,6 +45,12 @@ typedef int (*clock_management_callback_handler_t)(const struct clock_management
 typedef uint8_t clock_management_state_t;
 
 /**
+ * @brief @ref clock_management_state_t value indicating
+ * no state is selected (for internal usage by drivers)
+ */
+#define exCLOCK_MANAGEMENT_STATE_NONE	(0xFFU)
+
+/**
  * @brief Clock management callback data
  *
  * Describes clock management callback data. Drivers should not directly access
