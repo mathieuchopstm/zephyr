@@ -32,3 +32,8 @@ properties:
   clock-frequency:
     type: int
     required: true
+
+# static configuration
+  enable:
+    type: boolean
+    description: Enable generator during static init

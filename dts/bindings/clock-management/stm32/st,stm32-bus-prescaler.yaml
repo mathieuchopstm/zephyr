@@ -24,6 +24,11 @@ properties:
   "#clock-cells":
     const: 1
 
+# static configuration
+  prescaler:
+    type: int
+    description: Prescaler value (in register format) for static configuration
+
 clock-cells:
   # must be in register format
   - prescaler

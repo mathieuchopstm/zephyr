@@ -18,6 +18,11 @@ properties:
     required: true
     description: Offset of "bypass mode enable" bit in register
 
+# static configuration
+  bypass:
+    type: boolean
+    description: Enable bypass mode during static init
+
 clock-cells:
   - enable  # disable/enable generator
   - bypass  # disable/enable bypass mode
