@@ -38,15 +38,7 @@
 		status-offset = <17>;
 		bypass-offset = <18>;
 
-		/**
-		 * Disable the HSE node by default, as we
-		 * are not specifying the clock-frequency
-		 * property here, but it is required.
-		 *
-		 * Users of HSE will enable node and define
-		 * clock frequency in board DT
-		 */
-		status = "disabled";
+		zephyr,cms-static-init; //hse is usually statically initialized
 
 		hse_div32_for_rtc: hse_div32_for_rtc {
 			compatible = "fixed-prescaler";
@@ -116,8 +108,9 @@
 
 	/* muxes */
 	sysclk_mux: sysclk-mux {
-		compatible = "st,stm32-clock-multiplexer";
+		compatible = "st,stm32-sysclk-mux", "st,stm32-clock-multiplexer";
 		#clock-cells = <1>;
+		zephyr,cms-static-init;
 
 		reg-and-field = <RCC_FIELD(CFGR, 0, 3)>;
 		inputs = /* 0b000: */<&hsisys>,
@@ -130,6 +123,7 @@
 		sysclk: sysclk_div: sysclk-div {
 			compatible = "st,stm32-sysclk-prescaler";
 			#clock-cells = <1>;
+			zephyr,cms-static-init;
 
 			reg-and-field = <RCC_FIELD(CR, 2, 3)>;
 
@@ -154,6 +148,7 @@
 				compatible = "st,stm32-bus-prescaler";
 				reg-and-field = <RCC_FIELD(CFGR, 8, 4)>;
 				#clock-cells = <1>;
+				zephyr,cms-static-init;
 
 				ahbpre;
 
@@ -167,6 +162,7 @@
 					compatible = "st,stm32-bus-prescaler";
 					reg-and-field = <RCC_FIELD(CFGR, 12, 3)>;
 					#clock-cells = <1>;
+					zephyr,cms-static-init;
 
 					/* TODO: implement this
 					 * timpclk: tim_prescaler: clock {
