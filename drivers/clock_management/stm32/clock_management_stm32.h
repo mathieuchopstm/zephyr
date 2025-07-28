@@ -83,6 +83,20 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GENERATOR_DATA_GET(node_id, prop, idx)	\
 		DT_PHA_BY_IDX(node_id, prop, idx, enable)
 
+
+/*
+ * st,stm32-sysclk-mux is not defined in bindings;
+ * nodes will fall back to st,stm32-clock-multiplexer
+ * for DATA_DEFINE/DATA_GET/INIT_DATA_GET
+ */
+extern void stm32_sysclk_mux_change_hook(bool pre);
+
+#define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_MUX_PRE_INIT(node_id)	\
+	stm32_sysclk_mux_change_hook(true);
+#define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_MUX_POST_INIT(node_id)	\
+	stm32_sysclk_mux_change_hook(false);
+
+
 #define PHANDLE_IDX_PLUS_ONE_IF_TARGET(node_id, prop, idx, target)	\
 	(DT_SAME_NODE(DT_PROP_BY_IDX(node_id, prop, idx), target) ? (idx + 1) : 0)
 
