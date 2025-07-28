@@ -23,7 +23,11 @@ static int stm32_clock_gate_get_rate(const struct clk *hw)
 	}
 }
 
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+static int stm32_clock_gate_off_on(const struct clk *hw, bool configuration)
+#else
 static int stm32_clock_gate_configure(const struct clk *hw, const void *configuration)
+#endif
 {
 	const struct stm32_clock_gate_config *config = hw->hw_data;
 	const uint32_t enable = (uint32_t)configuration;
@@ -43,7 +47,11 @@ static int stm32_clock_gate_configure(const struct clk *hw, const void *configur
 
 const struct clock_management_driver_api stm32_clock_gate_api = {
 	.get_rate = stm32_clock_gate_get_rate,
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+	.off_on = stm32_clock_gate_off_on,
+#else
 	.configure = stm32_clock_gate_configure,
+#endif
 #if defined(CONFIG_CLOCK_MANAGEMENT_RUNTIME)
 	.notify = /* TBD */,
 #endif

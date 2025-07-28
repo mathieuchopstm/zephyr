@@ -45,10 +45,26 @@ static int stm32_internal_clkgen_get_rate(const struct clk *hw)
 	return (regval != 0) ? config->clock_rate : 0;
 }
 
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+static int stm32_internal_clkgen_off_on(const struct clk *hw, bool enable)
+{
+	const struct stm32_internal_clkgen_config *config = hw->hw_data;
+	const struct stm32_reg_field enable_reg = BITREG(config, enable);
+	const struct stm32_reg_field status_reg = BITREG(config, status);
+
+	stm32_clk_write_field(enable_reg, !!enable);
+	stm32_clk_poll_field(status_reg, !!enable);
+
+	return 0;
+}
+#endif
+
 static int stm32_internal_clkgen_configure(const struct clk *hw, const void *configuration)
 {
 	const struct stm32_internal_clkgen_config *config = hw->hw_data;
 	const uint32_t clk_config = (uint32_t)configuration;
+
+	/* TODO: -EIO if generator is active */
 
 	/* MCH: sign check is more expensive that compare with 0xFF on CM0+ */
 	if (config->bypass_offset != 0xFF) {
@@ -67,18 +83,23 @@ static int stm32_internal_clkgen_configure(const struct clk *hw, const void *con
 		stm32_clk_write_field(drive_reg, drive_cfg);
 	}
 
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	const struct stm32_reg_field enable_reg = BITREG(config, enable);
 	const struct stm32_reg_field status_reg = BITREG(config, status);
 	const uint32_t enable = !!(clk_config & BIT(Z_STM32_CLKGENEX_enable_SHIFT));
 
 	stm32_clk_write_field(enable_reg, enable);
 	stm32_clk_poll_field(status_reg, enable);
+#endif
 
 	return 0;
 }
 
 const struct clock_management_driver_api stm32_intclkgen_api = {
 	.get_rate = stm32_internal_clkgen_get_rate,
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+	.off_on = stm32_internal_clkgen_off_on,
+#endif
 	.configure = stm32_internal_clkgen_configure,
 };
 
