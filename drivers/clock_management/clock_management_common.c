@@ -191,6 +191,44 @@ static int clock_apply_state(const struct clk *clk_hw,
 }
 #endif
 
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+int clock_management_off(const struct clock_output *clk)
+{
+	__maybe_unused const struct clock_output_data *data;
+
+	if (!clk) {
+		return -EINVAL;
+	}
+
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
+	data = GET_CLK_CORE(clk)->hw_data;
+
+	/* Read rate */
+	return clock_turn_off(data->parent);
+#else
+	return clock_turn_off((const struct clk *)clk);
+#endif
+}
+
+int clock_management_on(const struct clock_output *clk)
+{
+	__maybe_unused const struct clock_output_data *data;
+
+	if (!clk) {
+		return -EINVAL;
+	}
+
+#if !defined(CONFIG_CLOCK_MANAGEMENT_DIRECT_STATES)
+	data = GET_CLK_CORE(clk)->hw_data;
+
+	/* Read rate */
+	return clock_turn_on(data->parent);
+#else
+	return clock_turn_on((const struct clk *)clk);
+#endif
+}
+#endif
+
 /**
  * @brief Get clock rate for given output
  *

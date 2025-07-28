@@ -233,19 +233,41 @@ def main():
             fp.write("/* zero nodes have requested static initialization */\n")
         else:
             # Emit static initialization code
-            """
-                * With clock_management_on(), this should be instead:
-                *
-                * 	static const struct clk *clk_hw = CLOCK_DT_GET(node_id);
-                * 	IF_ENABLED(Z_CLOCK_MANAGEMENT_ compat _NEEDS_INIT_CONFIGURE, (
-                * 		static const void *init_data =
-                * 			Z_CLOCK_MANAGEMENT_ compat _INIT_DATA_GET(node_id);
-                * 		ret = clock_configure(clk_hw, init_data);
-                * 		if (ret < 0) { break; }
-                * 	));
-                * 	ret = clock_enable(clk_hw);
-                * 	if (ret < 0) { break; }
-            """
+
+            # This helper function is required to keep the costs down
+            # when OFF_ON_SUPPORT is enabled. Naively, one would place
+            # these calls in the main init function... this works fine
+            # when there is only a call to configure, but becomes much
+            # more expensive as OFF_ON_SUPPORT is enabled because we
+            # then have TWO return values to check, and the second one
+            # also requires two comparisons (due to -ENOTSUP handling).
+            # Outlining the calls into this dedicated function adds a
+            # fixed overhead which is quickly recouped, since outlining
+            # eliminates an additional per-device penalty we would pay
+            # when compared to !OFF_ON_SUPPORT.
+            #
+            # Note that when !OFF_ON_SUPPORT, this gets inlined into
+            # the init routine and we don't pay the fixed overhead cost.
+            HELPER_CODE = """\
+static int enable_clock_device(const struct clk *clk_hw, const void *init_data)
+{
+    int ret;
+
+    ret = clock_configure(clk_hw, init_data);
+    if (ret < 0) {
+        return ret;
+    }
+
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+    ret = clock_turn_on(clk_hw);
+    if (ret < 0 && ret != -ENOSYS) {
+        return ret;
+    }
+#endif
+
+    return 0;
+}
+""".replace(4 * " ", "\t").rstrip()
 
             INIT_FUNCTION_TEMPLATE = """\
 int z_cms_static_init(void)
@@ -275,16 +297,10 @@ SYS_INIT(z_cms_static_init, PRE_KERNEL_1, 1);
         Z_CLOCK_MANAGEMENT_{compat}_INIT_DATA_DEFINE({node_id});
         static const void *init_data = (void *)(Z_CLOCK_MANAGEMENT_{compat}_INIT_DATA_GET({node_id}));
         static const struct clk *clk_hw = CLOCK_DT_GET({node_id});
+        int ret;
 
-        int ret = clock_configure(clk_hw, init_data);
-
-        if (ret < 0) {{
-    #ifdef CMS__LOG_STATIC_INIT_ERROR
-            printk(
-                "Failed to configure %s during static init: %d\\n",
-                DT_NODE_PATH({node_id}), ret);
-    #endif
-            //k_panic();
+        ret = enable_clock_device(clk_hw, init_data); //{node_path}
+        if (ret != 0) {{ /* < 0 here adds 4 bytes for some reason */
             return ret;
         }}
 
@@ -299,6 +315,7 @@ SYS_INIT(z_cms_static_init, PRE_KERNEL_1, 1);
                     node_id=f"DT_{node_z_path_id(node)}",
                     node_path=ct_path(node)
                 ) + "\n"
+            fp.write(HELPER_CODE)
             fp.write(INIT_FUNCTION_TEMPLATE.format(function_body=init_fn_code))
 
     return 0

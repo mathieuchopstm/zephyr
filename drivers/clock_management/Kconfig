@@ -35,6 +35,13 @@ config CLOCK_MANAGEMENT_NOFREQ_STATES
 	  meaningless, clock_management_req_rate() will not work and
 	  RUNTIME will be broken.
 
+config CLOCK_MANAGEMENT_OFF_ON_SUPPORT
+	bool "Enable clock_management_{off/on}"
+	help
+	  CANDIDATE IMPLEMENTATION OF clock_management_{off/on}.
+
+	  For test purposes only until upstream/collab is ready.
+
 # because we don't have clock_output objects
 # when this is enabled, SET_RATE and RUNTIME
 # are not supported

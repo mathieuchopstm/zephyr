@@ -514,6 +514,19 @@ struct clock_output {
 	exCLOCK_MANAGEMENT_DT_GET_STATE_OR(DT_DRV_INST(inst), output_name, state_name, if_nostate)
 
 /**
+ * @brief Disable clock output
+ *
+ * After this is called successfully,
+ * clock_management_get_rate() MUST return 0.
+ */
+int clock_management_off(const struct clock_output *clk);
+
+/**
+ * @brief Enable clock output
+ */
+int clock_management_on(const struct clock_output *clk);
+
+/**
  * @brief Get clock rate for given output
  *
  * Gets output clock rate in Hz for provided clock output.

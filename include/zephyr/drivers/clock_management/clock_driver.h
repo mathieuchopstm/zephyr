@@ -201,6 +201,14 @@ struct clock_management_driver_api {
 	int (*notify)(const struct clk *clk_hw, const struct clk *parent,
 		      const struct clock_management_event *event);
 #endif
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+/**
+ * @brief Disables or enables a clock.
+ *
+ * Exact semantics to be defined (refcount, effect on parent, ...)
+ */
+	int (*off_on)(const struct clk *clk_hw, bool enable);
+#endif
 	/** Gets clock rate in Hz */
 	int (*get_rate)(const struct clk *clk_hw);
 	/** Configure a clock with device specific data */
@@ -212,6 +220,41 @@ struct clock_management_driver_api {
 	int (*set_rate)(const struct clk *clk_hw, uint32_t rate_req);
 #endif
 };
+
+#if defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
+/**
+ * @brief Disable clock
+ *
+ * After successful call to this function,
+ * clock_get_rate(clk) MUST return 0.
+ */
+static inline int clock_turn_off(const struct clk *clk_hw)
+{
+	if (!(clk_hw->api) || !(clk_hw->api->off_on)) {
+		return -ENOSYS;
+	}
+
+	return clk_hw->api->off_on(clk_hw, false);
+}
+
+static inline int clock_turn_on(const struct clk *clk_hw)
+{
+	if (!(clk_hw->api) || !(clk_hw->api->off_on)) {
+		return -ENOSYS;
+	}
+
+	return clk_hw->api->off_on(clk_hw, true);
+}
+
+/**
+ * N.B.: fallback stubs not defined to ensure that
+ * implementation is handled properly in drivers
+ * and consumers. This would be a first-class
+ * citizen anyways, the Kconfig is just for
+ * prototyping purposes.
+ */
+#endif
+
 
 /**
  * @brief Notify clock of reconfiguration
