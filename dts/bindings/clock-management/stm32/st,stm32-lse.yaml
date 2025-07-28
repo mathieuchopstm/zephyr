@@ -27,6 +27,15 @@ properties:
       [0]: offset to field in register
       [1]: size of field in register
 
+# static configuration
+  bypass:
+    type: boolean
+    description: Enable bypass mode during static init
+
+  driving-capability:
+    type: int
+    description: Select driving capability to use during static init
+
 clock-cells:
   - enable              # disable/enable generator
   - bypass              # disable/enable bypass mode
