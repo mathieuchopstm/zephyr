@@ -61,7 +61,21 @@ const struct clock_management_driver_api stm32_clock_mux_api = {
 #define GET_MUX_INPUT(node_id, prop, idx)					\
 	CLOCK_DT_GET_OR_NULL(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
+#define ASSERT_STATIC_CONFIG(mux_node, sel_input)				\
+	BUILD_ASSERT(PHANDLE_IDX_BY_NODE(mux_node, inputs, sel_input) != -1,	\
+		DT_NODE_PATH(sel_input) " selected as input on mux "		\
+		DT_NODE_PATH(mux_node) " is not among node's inputs!");		\
+	BUILD_ASSERT(DT_NODE_HAS_STATUS(sel_input, okay),			\
+		DT_NODE_PATH(sel_input) " selected as input on mux "		\
+		DT_NODE_PATH(mux_node) " is not enabled!");
+
+/**
+ * TODO: (Nice-to-have) assert at least one input is enabled
+ */
 #define STM32_CLOCK_MUX_DEFINE(inst)						\
+	IF_ENABLED(DT_INST_NODE_HAS_PROP(inst, input_selection),		\
+		(ASSERT_STATIC_CONFIG(DT_DRV_INST(inst),			\
+			DT_INST_PROP(inst, input_selection))))			\
 	const struct stm32_clock_mux_config stm32_clock_mux_##inst = {		\
 		.mux_reg = STM32_INST_REG_FIELD(inst),				\
 		.parents = {							\
