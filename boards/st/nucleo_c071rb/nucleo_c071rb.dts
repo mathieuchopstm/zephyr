@@ -10,6 +10,8 @@
 #include "arduino_r3_connector.dtsi"
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 
+#define USE_STATIC_INIT 1
+
 / {
 	model = "STMicroelectronics STM32C071RB-NUCLEO board";
 	compatible = "st,stm32c071rb-nucleo";
@@ -179,10 +181,12 @@
 #include <st/c0/stm32c0_clocks.dtsi>
 
 /* bind states to devices (i.e., configure tree) */
+#if !USE_STATIC_INIT
 &cpu0 {
 	clock-state-0 = <&sysclk_48mhz_hse>;
 	clock-state-names = "default";
 };
+#endif
 
 /* NOTE: if you edit CPU clock frequency,
  * don't forget to update this value so
@@ -196,7 +200,24 @@
 
 &hse {
 	clock-frequency = <DT_FREQ_M(48)>;
-	status = "okay";
+
+	enable; /* static initialization */
+};
+
+&sysclk_mux {
+	input-selection = <&hse>;
+};
+
+&sysclk_div {
+	prescaler = <1>;
+};
+
+&ahbpre {
+	prescaler = <0x0>;
+};
+
+&apbpre {
+	prescaler = <0x0>;
 };
 
 &gpioa {
@@ -229,12 +250,21 @@
 	clock-state-names = "on", "off";
 };
 
+#if USE_STATIC_INIT
+&usart1_mux {
+	zephyr,cms-static-init; /* manual opt-in */
+	input-selection = <&pclk>;
+};
+#endif
+
 &usart1_clk {
+#if !USE_STATIC_INIT
 	usart1_init: usart1_init {
 		compatible = "clock-state";
 		clocks = <&usart1_mux 0>; //USART1_CLK = APBCLK
 		clock-frequency = <0>;
 	};
+#endif
 
 	usart1_on {
 		clock-frequency = <DT_FREQ_M(48)>;
@@ -246,7 +276,9 @@
 };
 
 &usart1 {
+#if !USE_STATIC_INIT
 	clock-state-0 = <&usart1_init>;
+#endif
 	clock-state-1 = <&usart1_on>;
 	clock-state-2 = <&usart1_off>;
 	clock-state-names = "init", "on", "off";
