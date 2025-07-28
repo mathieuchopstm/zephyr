@@ -54,9 +54,16 @@ extern "C" {
 	Z_STM32_CLKGENEX_PROP_EXTRACT(node_id, prop, idx, bypass) |		\
 	Z_STM32_CLKGENEX_PROP_EXTRACT(node_id, prop, idx, driving_capability))
 
+#define Z_CLOCK_MANAGEMENT_ST_STM32_INTERNAL_CLKGEN_INIT_DATA_GET(node_id)	\
+	(Z_STM32_CLKGENEX_NODEPROP_EXTRACT(node_id, enable) |			\
+	 Z_STM32_CLKGENEX_NODEPROP_EXTRACT(node_id, bypass) |			\
+	 Z_STM32_CLKGENEX_NODEPROP_EXTRACT(node_id, driving_capability))
+
 #define Z_CLOCK_MANAGEMENT_ST_STM32_HSE_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_HSE_DATA_GET(node_id, prop, idx)		\
 	Z_CLOCK_MANAGEMENT_ST_STM32_INTERNAL_CLKGEN_DATA_GET(node_id, prop, idx)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_HSE_INIT_DATA_GET(node_id)			\
+	Z_CLOCK_MANAGEMENT_ST_STM32_INTERNAL_CLKGEN_INIT_DATA_GET(node_id)
 
 #define Z_CLOCK_MANAGEMENT_ST_STM32_LSE_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_LSE_DATA_GET(node_id, prop, idx)		\
@@ -65,6 +72,8 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_DATA_GET(node_id, prop, idx)		\
 	DT_PHA_BY_IDX(node_id, prop, idx, prescaler)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_BUS_PRESCALER_INIT_DATA_GET(node_id)		\
+	DT_PROP(node_id, prescaler)
 
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GATE_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GATE_DATA_GET(node_id, prop, idx)		\
@@ -74,14 +83,25 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_GENERATOR_DATA_GET(node_id, prop, idx)	\
 		DT_PHA_BY_IDX(node_id, prop, idx, enable)
 
+#define PHANDLE_IDX_PLUS_ONE_IF_TARGET(node_id, prop, idx, target)	\
+	(DT_SAME_NODE(DT_PROP_BY_IDX(node_id, prop, idx), target) ? (idx + 1) : 0)
+
+#define PHANDLE_IDX_BY_NODE(node_id, prop, target)		\
+	((DT_FOREACH_PROP_ELEM_SEP_VARGS(node_id, prop,	\
+		PHANDLE_IDX_PLUS_ONE_IF_TARGET, (+), target)) - 1)
+
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_DATA_GET(node_id, prop, idx)		\
 		DT_PHA_BY_IDX(node_id, prop, idx, input_selection)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_CLOCK_MULTIPLEXER_INIT_DATA_GET(node_id)		\
+		PHANDLE_IDX_BY_NODE(node_id, inputs, DT_PROP(node_id, input_selection))
 
 /* Prescaler field contains one less than the desired division factor */
 #define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_DATA_GET(node_id, prop, idx)	\
 		(DT_PHA_BY_IDX(node_id, prop, idx, prescaler) - 1)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_SYSCLK_PRESCALER_INIT_DATA_GET(node_id)	\
+		(DT_PROP(node_id, prescaler) - 1)
 
 #define Z_CLOCK_MANAGEMENT_ST_STM32C0_HSISYS_DIV_DATA_DEFINE(node_id, prop, idx)
 #define Z_CLOCK_MANAGEMENT_ST_STM32C0_HSISYS_DIV_DATA_GET(node_id, prop, idx)		\
