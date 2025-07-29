@@ -11,6 +11,8 @@ board:
       - name: "V"
       # "O"ptimized (using STM32-specific drivers for everything)
       - name: "O"
+      # "L"ightweight = Optimized + OFF_ON_SUPPORT
+      - name: "L"
       # "G"eneric (using generic drivers when available, e.g., gate/mux)
       - name: "G"
   socs:
