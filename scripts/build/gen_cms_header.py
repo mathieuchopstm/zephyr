@@ -68,8 +68,7 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
 
-    edtser = os.path.join(os.path.split(args.edt_pickle)[0], "edt.pickle")
-    with open(edtser, "rb") as f:
+    with open(args.edt_pickle, "rb") as f:
         edt = pickle.load(f)
 
     clock_tree_root = edt.get_node(args.clock_tree_root)
