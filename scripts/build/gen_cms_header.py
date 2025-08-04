@@ -112,6 +112,10 @@ def main():
         if not node.status == "okay":
             continue
 
+        # skip bindingless nodes
+        if node.matching_compat is None:
+            continue
+
         compat = node.compats[0]
         if not compat in nodes_by_compat:
             nodes_by_compat[compat] = []
