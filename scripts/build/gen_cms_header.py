@@ -250,9 +250,20 @@ def main():
             INIT_FUNCTION_TEMPLATE = """\
 int z_cms_static_init(void)
 {{
+    extern void z_cms_pre_static_init_hook(void);
+    extern void z_cms_post_static_init_hook(void);
+
+    z_cms_pre_static_init_hook();
+
 {function_body}
+
+    z_cms_post_static_init_hook();
+
     return 0;
 }}
+
+__weak void z_cms_pre_static_init_hook(void) {{}}
+__weak void z_cms_post_static_init_hook(void) {{}}
 
 /* TODO: which level and prio? */
 SYS_INIT(z_cms_static_init, PRE_KERNEL_1, 1);
