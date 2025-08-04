@@ -1126,6 +1126,7 @@ if (CONFIG_CLOCK_MANAGEMENT)
     --clock-tree-root "/zephyr,cms-clock-tree-root"
     --subsystem-owned-compatible "clock-state"
     --subsystem-owned-compatible "clock-output"
+    --subsystem-owned-compatible "zephyr,cms-init-order"
     DEPENDS ${EDT_PICKLE}
   )
   add_custom_target(cms_autogen_h DEPENDS ${BINARY_DIR_INCLUDE_GENERATED}/clock_management_generated.h)

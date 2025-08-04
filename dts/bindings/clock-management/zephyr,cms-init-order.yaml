@@ -1,0 +1,11 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: "Ordered initialization node for Zephyr's Clock Management Subsystem"
+
+compatible: "zephyr,cms-init-order"
+
+properties:
+  "nodes":
+    type: phandles
+    description: tbd
