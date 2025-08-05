@@ -3,6 +3,8 @@
  */
 #include "stm32_clock_management_common.h"
 
+#include <stm32_ll_pwr.h>
+#include <stm32_ll_system.h>
 #include <stm32_ll_utils.h>
 #include <zephyr/sys/math_extras.h>
 
@@ -207,7 +209,7 @@ static int stm32_clock_initialize(void)
 
 SYS_INIT(stm32_clock_initialize, PRE_KERNEL_1, 1);
 
-#else
+#elif defined(CONFIG_SOC_SERIES_STM32C0X)
 
 void stm32_sysclk_mux_change_hook(bool pre)
 {
@@ -243,6 +245,41 @@ void stm32_sysclk_mux_change_hook(bool pre)
 	} else {
 		/* Both frequencies equal - do nothing */
 	}
+}
+
+#else /* really only supports STM32H7... for now... */
+
+void z_cms_pre_static_init_hook(void)
+{
+	/**
+	 * Configure a high flash latency to ensure we don't
+	 * violate timing constraints during clock configuration.
+	 * (TBD: take value from Kconfig/DTS)
+	 *
+	 * Also set voltage to max if applicable. (TBD: series gate)
+	 */
+	LL_FLASH_SetLatency(LL_FLASH_LATENCY_7);
+
+	LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE0);
+	while (LL_PWR_IsActiveFlag_VOS() == 0) {
+		/* wait for voltage stabilization */
+	}
+}
+
+void z_cms_post_static_init_hook(void)
+{
+	/* Configure appropriate flash latency */
+	/**
+	 * TODO: generic mechanism to get the clock device
+	 * (e.g., clock-output on flash device?)
+	 *
+	 * NOTE: H7: rcc_aclk = rcc_hclk[3:1]
+	 */
+	const struct clk *ahbclk = CLOCK_DT_GET(DT_NODELABEL(hclk));
+
+	LL_SetFlashLatency(clock_get_rate(ahbclk));
+
+	/* TODO: optimize voltage scale */
 }
 
 #endif
