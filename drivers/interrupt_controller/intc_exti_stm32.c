@@ -161,6 +161,8 @@ static int stm32_exti_enable_registers(void)
 {
 	/* Initialize to 0 for series where there is nothing to do. */
 	int ret = 0;
+#if defined(CONFIG_CLOCK_CONTROL)
+
 #if defined(CONFIG_SOC_SERIES_STM32F2X) ||     \
 	defined(CONFIG_SOC_SERIES_STM32F3X) || \
 	defined(CONFIG_SOC_SERIES_STM32F4X) || \
@@ -186,6 +188,15 @@ static int stm32_exti_enable_registers(void)
 
 	ret = clock_control_on(clk, (clock_control_subsys_t) &pclken);
 #endif
+#elif defined(CONFIG_CLOCK_MANAGEMENT)
+#	if defined(CONFIG_SOC_SERIES_STM32C0X)
+		/* nothing */
+#	elif defined(CONFIG_SOC_SERIES_STM32H7X)
+		LL_APB4_GRP1_EnableClock(LL_APB4_GRP1_PERIPH_SYSCFG);
+#	else
+#		error "series not supported"
+#	endif
+#endif /* CONFIG_CLOCK_CONTROL or CONFIG_CLOCK_MANAGEMENT */
 	return ret;
 }
 
