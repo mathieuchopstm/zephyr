@@ -1450,7 +1450,11 @@ static int spi_stm32_init(const struct device *dev)
 
 	}
 
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	err = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+#else
+	err = clock_management_on(cfg->clock_output);
+#endif
 	if (err < 0) {
 		LOG_ERR("failed to turn on SPI (%d)", err);
 		return err;
@@ -1641,8 +1645,9 @@ static const struct spi_stm32_config spi_stm32_cfg_##id = {		\
 		.clock_output = CLOCK_MANAGEMENT_DT_INST_GET_OUTPUT(id),			\
 		.clock_init_state = exCLOCK_MANAGEMENT_DT_INST_GET_STATE_OR(			\
 			id, default, init, exCLOCK_MANAGEMENT_STATE_NONE),			\
+		COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT, (), (			\
 		.clock_off_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(id, default, off),	\
-		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(id, default, on),))	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(id, default, on),))))	\
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(id),			\
 	.fifo_enabled = SPI_FIFO_ENABLED(id),				\
 	STM32_SPI_IRQ_HANDLER_FUNC(id)					\

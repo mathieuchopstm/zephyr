@@ -71,8 +71,10 @@ struct gpio_stm32_config {
 	struct stm32_pclken pclken;
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
 	const struct clock_output *clock_output;
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	clock_management_state_t clock_on_state;
 	clock_management_state_t clock_off_state;
+#endif
 #endif
 };
 

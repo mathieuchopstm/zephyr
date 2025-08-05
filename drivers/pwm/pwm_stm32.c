@@ -95,8 +95,10 @@ struct pwm_stm32_config {
 	struct stm32_pclken pclken;
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
 	const struct clock_output *clock_output;
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	clock_management_state_t clock_on_state;
 	clock_management_state_t clock_off_state;
+#endif
 #endif
 	const struct pinctrl_dev_config *pcfg;
 #ifdef CONFIG_PWM_CAPTURE
@@ -815,11 +817,16 @@ static int pwm_stm32_init(const struct device *dev)
 		return r;
 	}
 #elif (CONFIG_CLOCK_MANAGEMENT)
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	r = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+#else
+	r = clock_management_on(cfg->clock_output);
+#endif
 	if (r < 0) {
 		LOG_ERR("failed to turn on TIM clock (%d)", r);
 		return r;
 	}
+
 
 	r = clock_management_get_rate(cfg->clock_output);
 	if (r < 0) {
@@ -928,8 +935,9 @@ static void pwm_stm32_irq_config_func_##index(const struct device *dev)		\
 		.pclken = DT_INST_CLK(index, timer),))                          \
 	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (					\
 		.clock_output = CLOCK_MANAGEMENT_DT_GET_OUTPUT(PWM(index)),			\
+		COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT, (), (			\
 		.clock_off_state = CLOCK_MANAGEMENT_DT_GET_STATE(PWM(index), default, off),	\
-		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(PWM(index), default, on),))	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(PWM(index), default, on),))))	\
 		.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),		       \
 		CAPTURE_INIT(index)					       \
 	};                                                                     \

@@ -366,9 +366,17 @@ static int gpio_stm32_clock_request(const struct device *dev, bool on)
 					(clock_control_subsys_t)&cfg->pclken);
 	}
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	clock_management_state_t state = (on) ? cfg->clock_on_state : cfg->clock_off_state;
 
 	ret = clock_management_apply_state(cfg->clock_output, state);
+#else
+	if (on) {
+		ret = clock_management_on(cfg->clock_output);
+	} else {
+		ret = clock_management_off(cfg->clock_output);
+	}
+#endif
 #endif
 	return ret;
 }
@@ -758,8 +766,9 @@ static int gpio_stm32_init(const struct device *dev)
 		.pclken = { .bus = __bus, .enr = __cenr }))		       \
 		IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (				\
 		.clock_output = CLOCK_MANAGEMENT_DT_GET_OUTPUT(__node),		\
+		COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT, (), (			\
 		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(__node, default, on),		\
-		.clock_off_state = CLOCK_MANAGEMENT_DT_GET_STATE(__node, default, off)))	\
+		.clock_off_state = CLOCK_MANAGEMENT_DT_GET_STATE(__node, default, off)))))	\
 	};								       \
 	static struct gpio_stm32_data gpio_stm32_data_## __suffix;	       \
 	IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (					\

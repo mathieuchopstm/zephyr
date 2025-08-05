@@ -109,8 +109,10 @@ struct counter_stm32_config {
 	struct stm32_pclken pclken;
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
 	const struct clock_output *clock_output;
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	clock_management_state_t clock_on_state;
 	clock_management_state_t clock_off_state;
+#endif
 #endif
 	void (*irq_config_func)(const struct device *dev);
 	uint32_t irqn;
@@ -496,7 +498,11 @@ static int counter_stm32_init_timer(const struct device *dev)
 	}
 	data->freq = tim_clk / (cfg->prescaler + 1U);
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	r = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+#else
+	r = clock_management_on(cfg->clock_output);
+#endif
 	if (r < 0) {
 		LOG_ERR("Failed to turn on TIM clock (%d)", r);
 		return r;
@@ -695,8 +701,9 @@ void counter_stm32_irq_handler(const struct device *dev)
 		},))								  \
 		IF_ENABLED(CONFIG_CLOCK_MANAGEMENT, (						\
 		.clock_output = CLOCK_MANAGEMENT_DT_GET_OUTPUT(TIMER(idx)),			\
+		COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT, (), (			\
 		.clock_off_state = CLOCK_MANAGEMENT_DT_GET_STATE(TIMER(idx), default, off),	\
-		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(TIMER(idx), default, on),))	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_GET_STATE(TIMER(idx), default, on),))))	\
 		.irq_config_func = counter_##idx##_stm32_irq_config,		  \
 		.irqn = DT_IRQN(TIMER(idx)),					  \
 		.reset = RESET_DT_SPEC_GET(TIMER(idx)),				  \

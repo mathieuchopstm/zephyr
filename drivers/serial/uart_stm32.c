@@ -2080,7 +2080,11 @@ static int uart_stm32_clocks_enable(const struct device *dev)
 	}
 
 	/* enable USART clock */
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	err = clock_management_apply_state(config->clock_output, config->clock_on_state);
+#else
+	err = clock_management_on(config->clock_output);
+#endif
 	if (err < 0) {
 		LOG_ERR("failed to turn on USART clock (%d)", err);
 		return err;
@@ -2283,7 +2287,11 @@ static int uart_stm32_pm_action(const struct device *dev,
 		err = clock_control_on(data->clock,
 					(clock_control_subsys_t)&config->pclken[0]);
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
+#	if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 		err = clock_management_apply_state(config->clock_output, config->clock_on_state);
+#	else
+		err = clock_management_on(config->clock_output);
+#	endif
 #endif
 		if (err < 0) {
 			LOG_ERR("Could not enable (LP)UART clock");
@@ -2305,7 +2313,12 @@ static int uart_stm32_pm_action(const struct device *dev,
 		/* Stop device clock. Note: fixed clocks are not handled yet. */
 		err = clock_control_off(data->clock, (clock_control_subsys_t)&config->pclken[0]);
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
+#	if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 		err = clock_management_apply_state(config->clock_output, config->clock_off_state);
+#	else
+		err = clock_management_off(config->clock_output);
+#	endif
+
 #endif
 		if (err < 0) {
 			LOG_ERR("Could not enable (LP)UART clock");
@@ -2524,8 +2537,9 @@ static const struct uart_stm32_config uart_stm32_cfg_##index = {	\
 		.clock_output = CLOCK_MANAGEMENT_DT_INST_GET_OUTPUT(index), \
 		.clock_init_state = exCLOCK_MANAGEMENT_DT_INST_GET_STATE_OR( \
 			index, default, init, exCLOCK_MANAGEMENT_STATE_NONE),		   \
+	COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT, (), (				\
 		.clock_off_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, off), \
-		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, on),))	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, on),))))	\
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),			\
 	.single_wire = DT_INST_PROP(index, single_wire),		\
 	.tx_rx_swap = DT_INST_PROP(index, tx_rx_swap),			\

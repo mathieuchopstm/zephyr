@@ -55,8 +55,10 @@ struct i2c_stm32_config {
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
 	const struct clock_output *clock_output;
 	clock_management_state_t clock_init_state;
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	clock_management_state_t clock_on_state;
 	clock_management_state_t clock_off_state;
+#endif
 #endif
 	I2C_TypeDef *i2c;
 	uint32_t bitrate;

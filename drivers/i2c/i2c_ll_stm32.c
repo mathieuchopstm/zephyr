@@ -390,7 +390,11 @@ static int i2c_stm32_activate(const struct device *dev)
 		return -EIO;
 	}
 #elif defined(CONFIG_CLOCK_MANAGEMENT)
+#if !defined(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT)
 	int err = clock_management_apply_state(cfg->clock_output, cfg->clock_on_state);
+#else
+	int err = clock_management_on(cfg->clock_output);
+#endif
 
 	if (err < 0) {
 		LOG_ERR("failed to turn on I2C clock (%d)", err);
@@ -706,8 +710,9 @@ static const struct i2c_stm32_config i2c_stm32_cfg_##index = {		\
 		.clock_output = CLOCK_MANAGEMENT_DT_INST_GET_OUTPUT(index),			\
 		.clock_init_state = exCLOCK_MANAGEMENT_DT_INST_GET_STATE_OR(			\
 			index, default, init, exCLOCK_MANAGEMENT_STATE_NONE),			\
+		COND_CODE_1(CONFIG_CLOCK_MANAGEMENT_OFF_ON_SUPPORT, (), (			\
 		.clock_off_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, off),	\
-		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, on),))	\
+		.clock_on_state = CLOCK_MANAGEMENT_DT_INST_GET_STATE(index, default, on),))))	\
 	STM32_I2C_IRQ_HANDLER_FUNCTION(index)				\
 	.bitrate = DT_INST_PROP(index, clock_frequency),		\
 	.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),			\
