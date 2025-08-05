@@ -1,0 +1,138 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  STM32H7 PLL prescaler and VCO
+
+  ```
+           Shared PLL source clock
+                     |
+   +=================|=================+
+   | PLLx            V                 |
+   |  prescaler  [/ DIVMx]             |
+   |  stage          | = refx_ck       |
+   | _______________ | _______________ |
+   | PLLx            |                 |
+   |  VCO stage      V                 |
+   |           [* mulfactor]           |
+   |                 | = vcox_ck       |
+   | _______________ | _______________ |
+   | PLLx            |                 |
+   |  output stage   |                 |
+   |                 |                 |
+   |     +-----------+-----------+     |
+   |     |           |           |     |
+   |     V           V           V     |
+   | [/ DIVPx]   [/ DIVQx]   [/ DIVRx] |
+   |     |           |           |     |
+   |  G -x           |           |     |
+   |  A  |           |           |     |
+   |  T -|-----------x           |     |
+   |  E  |           |           |     |
+   |  S -|-----------|-----------x     |
+   |     |           |           |     |
+   +=====|===========|===========|=====+
+         |           |           |
+         V           V           V
+     pllx_p_ck   pllx_q_ck   pllx_r_ck
+  ```
+
+  The value of mulfactor is:
+    - (DIVNx) if fractional mode is disabled
+    - (DIVNx + (FRACNx / 2^13)) if fractional mode is enabled
+
+  This binding describes properties for the prescaler and VCO
+  stages of a PLL. These two stages are merged into a single
+  node which hosts each output as a separate child node.
+
+  See st,stm32-h7-pll-output for more details about outputs.
+
+  In a more practical example:
+    pll1-pvco {
+      /* DIVMx and VCO properties */
+
+      pll1-p { /* P output properties */ };
+      pll1-q { /* Q output properties */ };
+      pll1-r { /* R output properties */ };
+    };
+
+  The "reg-XXX" properties are expected to
+  be an array of three elements:
+    [0]: RCC register address
+    [1]: offset of configuration field
+    [2]: size of configuration field (defaults to 1 if not present)
+
+compatible: "st,stm32-h7-pll-pvco"
+
+include: [clock-node.yaml]
+
+properties:
+  reg-divm:
+    required: true
+    type: array
+    description: PLL DIVMx field location
+
+  reg-on:
+    required: true
+    type: array
+    description: PLLxON bit location
+
+  reg-rdy:
+    required: true
+    type: array
+    description: PLLxRDY bit location
+
+  reg-vcosel:
+    required: true
+    type: array
+    description: PLLxVCOSEL bit location
+
+  reg-range:
+    required: true
+    type: array
+    description: PLLxRGE field location
+
+  reg-fracen:
+    required: true
+    type: array
+    description: PLLxFRACEN bit location
+
+  reg-divn:
+    required: true
+    type: array
+    description: PLL DIVNx field location
+
+  reg-fracn:
+    required: true
+    type: array
+    description: PLL FRACNx field location
+
+  "#clock-cells":
+    const: 5
+
+# static configuration
+  divm:
+    type: int
+
+  vcosel:
+    type: int
+
+  range:
+    type: int
+
+  divn:
+    type: int
+
+  fracn:
+    type: int
+    description: |
+      If non-zero, fractional mode is enabled
+      and FRACN is set to this property's value.
+      If zero, fractional mode is disabled.
+
+clock-cells:
+  - divm
+  - vcosel
+  - range
+  - divn
+  - fracn

@@ -75,4 +75,15 @@ config CLOCK_MANAGEMENT_STM32C0_HSISYS_DIV
 	help
 	  Driver for STM32C0 HSISYS divider
 
+config CLOCK_MANAGEMENT_STM32_H7_PLL
+	bool "STM32 H7 PLL driver"
+	default y
+	depends on DT_HAS_ST_STM32_H7_PLL_PVCO_ENABLED
+	depends on DT_HAS_ST_STM32_H7_PLL_OUTPUT_ENABLED
+	help
+	  Driver for STM32 H7 PLL
+
+	  (Functional PLL requires a PVCO + output, so this
+	   Kconfig is gated behind both being enabled in DT)
+
 endif # SOC_FAMILY_STM32

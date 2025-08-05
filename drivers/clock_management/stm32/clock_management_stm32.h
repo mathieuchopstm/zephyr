@@ -84,6 +84,62 @@ extern "C" {
 		DT_PHA_BY_IDX(node_id, prop, idx, enable)
 
 
+/**
+ * Bits for "st,stm32-h7-pll-pvco" configuration
+ * [   00] VCOSEL
+ * [02:01] Range
+ * [11:03] DIVN  (Multiplier, integer part)
+ * [24:12] FRACN (Multiplier, fractional part)
+ *	If equal to zero, fractional mode is disabled.
+ * [   25] <not used>
+ * [31:26] Input prescaler (DIVM)
+ */
+#define Z_STM32_PLL_PVCO_vcosel_SHIFT			0
+#define Z_STM32_PLL_PVCO_vcosel_MASK			0x1
+#define Z_STM32_PLL_PVCO_range_SHIFT			1
+#define Z_STM32_PLL_PVCO_range_MASK			0x3
+#define Z_STM32_PLL_PVCO_divn_SHIFT			3
+#define Z_STM32_PLL_PVCO_divn_MASK			0x1FF
+#define Z_STM32_PLL_PVCO_fracn_SHIFT			12
+#define Z_STM32_PLL_PVCO_fracn_MASK			0x1FFF
+#define Z_STM32_PLL_PVCO_divm_SHIFT			26
+#define Z_STM32_PLL_PVCO_divm_MASK			0x3F
+
+/* Requires Z_STM32_gpcp_sysname to be defined by driver */
+#define Z_STM32_generic_propcell_unpack(packed_val, prop_or_cell_name)	\
+	(((packed_val) >> CONCAT(Z_STM32_, Z_STM32_gpcp_sysname, _, prop_or_cell_name, _SHIFT))	\
+		& CONCAT(Z_STM32_, Z_STM32_gpcp_sysname, _, prop_or_cell_name, _MASK))
+
+#define Z_STM32_generic_propcell_pack(prop_val, sys_name, prop_or_cell_name)	\
+	(((prop_val) & CONCAT(Z_STM32_, sys_name, _, prop_or_cell_name, _MASK))	\
+		<< CONCAT(Z_STM32_, sys_name, _, prop_or_cell_name, _SHIFT))
+
+#define Z_STM32_generic_cell_extract(node_id, prop, idx, sys_name, cell_name)	\
+	Z_STM32_generic_propcell_pack(						\
+		DT_PHA_BY_IDX_OR(node_id, prop, idx, cell_name, 0), sys_name, cell_name)
+
+#define Z_STM32_generic_prop_extract(node_id, sys_name, prop)		\
+	Z_STM32_generic_propcell_pack(DT_PROP_OR(node_id, prop, 0), sys_name, prop)
+
+#define Z_CLOCK_MANAGEMENT_ST_STM32_H7_PLL_PVCO_DATA_GET(node_id, prop, idx)	\
+	(Z_STM32_generic_cell_extract(node_id, prop, idx, PLL_PVCO, divm)   |	\
+	 Z_STM32_generic_cell_extract(node_id, prop, idx, PLL_PVCO, vcosel) |	\
+	 Z_STM32_generic_cell_extract(node_id, prop, idx, PLL_PVCO, range)  |	\
+	 Z_STM32_generic_cell_extract(node_id, prop, idx, PLL_PVCO, divn)   |	\
+	 Z_STM32_generic_cell_extract(node_id, prop, idx, PLL_PVCO, fracn))
+#define Z_CLOCK_MANAGEMENT_ST_STM32_H7_PLL_PVCO_INIT_DATA_GET(node_id)		\
+	(Z_STM32_generic_prop_extract(node_id, PLL_PVCO, divm)   |		\
+	 Z_STM32_generic_prop_extract(node_id, PLL_PVCO, vcosel) |		\
+	 Z_STM32_generic_prop_extract(node_id, PLL_PVCO, range)  |		\
+	 Z_STM32_generic_prop_extract(node_id, PLL_PVCO, divn)   |		\
+	 Z_STM32_generic_prop_extract(node_id, PLL_PVCO, fracn))
+
+/* Prescaler field contains one less than the desired division factor */
+#define Z_CLOCK_MANAGEMENT_ST_STM32_H7_PLL_OUTPUT_DATA_GET(node_id, prop, idx)	\
+	(DT_PHA_BY_IDX(node_id, prop, idx, div) - 1)
+#define Z_CLOCK_MANAGEMENT_ST_STM32_H7_PLL_OUTPUT_INIT_DATA_GET(node_id)	\
+	(DT_PROP(node_id, div) - 1)
+
 /*
  * st,stm32-sysclk-mux is not defined in bindings;
  * nodes will fall back to st,stm32-clock-multiplexer

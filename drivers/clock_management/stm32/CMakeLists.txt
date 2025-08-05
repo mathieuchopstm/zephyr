@@ -11,6 +11,10 @@ zephyr_library_sources_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32_SYSCLK_PRESCALER stm3
 zephyr_library_sources_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32_TIMER_FREQMUL stm32_timer_freqmul.c)
 
 zephyr_library_sources_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32C0_HSISYS_DIV stm32c0_hsisys_div.c)
+zephyr_library_sources_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32_H7_PLL
+  stm32_h7_pll_pvco.c
+  stm32_h7_pll_output.c
+)
 
 # Header
 add_clock_management_header_ifdef(CONFIG_CLOCK_MANAGEMENT_STM32 clock_management_stm32.h)

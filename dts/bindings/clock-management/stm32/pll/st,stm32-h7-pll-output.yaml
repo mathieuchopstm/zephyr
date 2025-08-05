@@ -1,0 +1,39 @@
+# Copyright 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  STM32H7 PLL output
+
+  See st,stm32-h7-pll-pvco for more details.
+
+  The "reg-XXX" properties are expected to
+  be an array of three elements:
+    [0]: RCC register address
+    [1]: offset of configuration field
+    [2]: size of configuration field (defaults to 1 if not present)
+
+compatible: "st,stm32-h7-pll-output"
+
+include: [clock-node.yaml]
+
+properties:
+  reg-en:
+    type: array
+    required: true
+    description: DIVyxEN bit location (y = P/Q/R)
+
+  reg-div:
+    type: array
+    required: true
+    description: PLL DIVyx field location (y = P/Q/R)
+
+  "#clock-cells":
+    type: int
+    const: 1
+
+# static configuration
+  div:
+    type: int
+
+clock-cells:
+  - div
