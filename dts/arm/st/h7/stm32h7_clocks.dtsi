@@ -1,0 +1,755 @@
+/*
+ * Copyright (c) 2025 STMicroelectronics
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#define RCC_BASE	0x58024400
+
+/* generated from SVD */
+#define RCC_CR			(RCC_BASE + 0x000)
+#define RCC_HSICFGR		(RCC_BASE + 0x004)
+#define RCC_CRRCR		(RCC_BASE + 0x008)
+#define RCC_CFGR		(RCC_BASE + 0x010)
+#define RCC_D1CFGR		(RCC_BASE + 0x018)
+#define RCC_D2CFGR		(RCC_BASE + 0x01C)
+#define RCC_D3CFGR		(RCC_BASE + 0x020)
+#define RCC_PLLCKSELR		(RCC_BASE + 0x028)
+#define RCC_PLLCFGR		(RCC_BASE + 0x02C)
+#define RCC_PLL1DIVR		(RCC_BASE + 0x030)
+#define RCC_PLL1FRACR		(RCC_BASE + 0x034)
+#define RCC_PLL2DIVR		(RCC_BASE + 0x038)
+#define RCC_PLL2FRACR		(RCC_BASE + 0x03C)
+#define RCC_PLL3DIVR		(RCC_BASE + 0x040)
+#define RCC_PLL3FRACR		(RCC_BASE + 0x044)
+#define RCC_D1CCIPR		(RCC_BASE + 0x04C)
+#define RCC_D2CCIP1R		(RCC_BASE + 0x050)
+#define RCC_D2CCIP2R		(RCC_BASE + 0x054)
+#define RCC_D3CCIPR		(RCC_BASE + 0x058)
+#define RCC_CIER		(RCC_BASE + 0x060)
+#define RCC_CIFR		(RCC_BASE + 0x064)
+#define RCC_CICR		(RCC_BASE + 0x068)
+#define RCC_BDCR		(RCC_BASE + 0x070)
+#define RCC_CSR			(RCC_BASE + 0x074)
+#define RCC_AHB3RSTR		(RCC_BASE + 0x07C)
+#define RCC_AHB1RSTR		(RCC_BASE + 0x080)
+#define RCC_AHB2RSTR		(RCC_BASE + 0x084)
+#define RCC_AHB4RSTR		(RCC_BASE + 0x088)
+#define RCC_APB3RSTR		(RCC_BASE + 0x08C)
+#define RCC_APB1LRSTR		(RCC_BASE + 0x090)
+#define RCC_APB1HRSTR		(RCC_BASE + 0x094)
+#define RCC_APB2RSTR		(RCC_BASE + 0x098)
+#define RCC_APB4RSTR		(RCC_BASE + 0x09C)
+#define RCC_GCR			(RCC_BASE + 0x0A0)
+#define RCC_D3AMR		(RCC_BASE + 0x0A8)
+
+/* useless ?? */
+#define RCC_RSR			(RCC_BASE + 0x0D0)
+#define RCC_AHB3ENR		(RCC_BASE + 0x0D4)
+#define RCC_AHB1ENR		(RCC_BASE + 0x0D8)
+#define RCC_AHB2ENR		(RCC_BASE + 0x0DC)
+#define RCC_AHB4ENR		(RCC_BASE + 0x0E0)
+#define RCC_APB3ENR		(RCC_BASE + 0x0E4)
+#define RCC_APB1LENR		(RCC_BASE + 0x0E8)
+#define RCC_APB1HENR		(RCC_BASE + 0x0EC)
+#define RCC_APB2ENR		(RCC_BASE + 0x0F0)
+#define RCC_APB4ENR		(RCC_BASE + 0x0F4)
+#define RCC_AHB3LPENR		(RCC_BASE + 0x0FC)
+#define RCC_AHB1LPENR		(RCC_BASE + 0x100)
+#define RCC_AHB2LPENR		(RCC_BASE + 0x104)
+#define RCC_AHB4LPENR		(RCC_BASE + 0x108)
+#define RCC_APB3LPENR		(RCC_BASE + 0x10C)
+#define RCC_APB1LLPENR		(RCC_BASE + 0x110)
+#define RCC_APB1HLPENR		(RCC_BASE + 0x114)
+#define RCC_APB2LPENR		(RCC_BASE + 0x118)
+#define RCC_APB4LPENR		(RCC_BASE + 0x11C)
+#define RCC_C1_RSR		(RCC_BASE + 0x130)
+#define RCC_C1_AHB3ENR		(RCC_BASE + 0x134)
+#define RCC_C1_AHB1ENR		(RCC_BASE + 0x138)
+#define RCC_C1_AHB2ENR		(RCC_BASE + 0x13C)
+#define RCC_C1_AHB4ENR		(RCC_BASE + 0x140)
+#define RCC_C1_APB3ENR		(RCC_BASE + 0x144)
+#define RCC_C1_APB1LENR		(RCC_BASE + 0x148)
+#define RCC_C1_APB1HENR		(RCC_BASE + 0x14C)
+#define RCC_C1_APB2ENR		(RCC_BASE + 0x150)
+#define RCC_C1_APB4ENR		(RCC_BASE + 0x154)
+#define RCC_C1_AHB3LPENR	(RCC_BASE + 0x15C)
+#define RCC_C1_AHB1LPENR	(RCC_BASE + 0x160)
+#define RCC_C1_AHB2LPENR	(RCC_BASE + 0x164)
+#define RCC_C1_AHB4LPENR	(RCC_BASE + 0x168)
+#define RCC_C1_APB3LPENR	(RCC_BASE + 0x16C)
+#define RCC_C1_APB1LLPENR	(RCC_BASE + 0x170)
+#define RCC_C1_APB1HLPENR	(RCC_BASE + 0x174)
+#define RCC_C1_APB2LPENR	(RCC_BASE + 0x178)
+#define RCC_C1_APB4LPENR	(RCC_BASE + 0x17C)
+/* endof generated */
+
+/* Third cell is field size, defaults to 1 if not present */
+#define RCC_FIELD(reg_name, end_bit, start_bit)	\
+	(RCC_ ##reg_name) (start_bit) ((end_bit) - (start_bit) + 1)
+#define RCC_BIT(reg_name, offset)		(RCC_ ##reg_name) (offset)
+
+/ {
+	clock_tree_root: zephyr,cms-clock-tree-root { };
+};
+
+/**
+ * TODO: this is based on STM32H745/747/755/757 RefMan
+ * Modifications may be needed for other SoCs
+ */
+
+&clock_tree_root {
+	initialization-sequence {
+		compatible = "zephyr,cms-init-order";
+
+		/**
+		 * Start with generators.
+		 * Then the PLL mux (otherwise PLLs don't have a clock)
+		 * Then the PLL outputs (must be done before PVCOs)
+		 * Then the PLL PVCOs
+		 *
+		 * NOTE: be careful when writing this list,
+		 * it's VERY easy to forget a node and deadlock
+		 * the whole system...
+		 */
+
+		nodes = <&hse /*&hsi &lse &lsi &csi  TBD*/
+			 &pllsrc
+			 &pll1_p &pll1_q &pll1_r &pll1_cms
+			 &pll2_p &pll2_q &pll2_r &pll2_cms
+			 &pll3_p &pll3_q &pll3_r &pll3_cms>;
+	};
+
+
+
+	/* Generators */
+	hse_ck: hse_ker_ck: hse: hse {
+		compatible = "st,stm32-hse", "st,stm32-internal-clkgen";
+		#clock-cells = <2>;
+		rcc-reg = <RCC_CR>;
+		enable-offset = <16>;
+		status-offset = <17>;
+		bypass-offset = <18>;
+
+		zephyr,cms-static-init;
+	};
+
+	hsi: hsi {
+		compatible = "st,stm32-internal-clkgen";
+		#clock-cells = <1>;
+		rcc-reg = <RCC_CR>;
+		enable-offset = <0>;
+		status-offset = <2>;
+		clock-frequency = <DT_FREQ_M(64)>;
+
+//		zephyr,cms-static-init;
+
+		hsi_ck: hsi_ker_ck: hsidiv: hsidiv {
+			/* TODO: the real thing! */
+			compatible = "fixed-prescaler";
+			#clock-cells = <0>;
+			division-factor = <1>;
+		};
+	};
+
+	lse_ck: lse: lse {
+		compatible = "st,stm32-lse", "st,stm32-internal-clkgen";
+		#clock-cells = <3>;
+		rcc-reg = <RCC_BDCR>;
+		enable-offset = <0>;
+		status-offset = <1>;
+		bypass-offset = <2>;
+		drive-capability-field = <3 1>;
+		clock-frequency = <32768>;
+
+//		zephyr,cms-static-init;
+	};
+
+	lsi_ck: lsi: lsi {
+		compatible = "st,stm32-internal-clkgen";
+		#clock-cells = <1>;
+		rcc-reg = <RCC_CSR>;
+		enable-offset = <0>;
+		status-offset = <1>;
+		clock-frequency = <DT_FREQ_K(32)>;
+
+//		zephyr,cms-static-init;
+
+		/* TODO: iwdg support */
+	};
+
+	csi_ck: csi_ker_ck: csi: csi {
+		status = "disabled"; //TBD
+	};
+
+	hsi48_ck: hsi48: hsi48 {
+		compatible = "st,stm32-internal-clkgen";
+		#clock-cells = <1>;
+		rcc-reg = <RCC_CR>;
+		enable-offset = <12>;
+		status-offset = <13>;
+		clock-frequency = <DT_FREQ_M(48)>;
+
+		status = "disabled"; //only useful for USB
+	};
+
+	/* TODO: external primary sources */
+	/**
+	 * - ETH_MII_TX_CLK
+	 * - ETH_MII_RX_CLK
+	 * - ETH_RMII_REF_CLK
+	 * - USB_PHY1
+	 * - USB_PHY2
+	 */
+
+	/* PLLs */
+	pllsrc: pll-src-mux {
+		compatible = "st,stm32-clock-multiplexer";
+		#clock-cells = <1>;
+		zephyr,cms-static-init;
+
+		reg-and-field = <RCC_FIELD(PLLCKSELR, 1, 0)>;
+		inputs = /* 0b00: */ <&hsi_ck>,
+			 /* 0b01: */ <&csi_ck>,
+			 /* 0b10: */ <&hse_ck>;
+			 /* 0b11: no clock */
+
+		pll1_cms: pll1 {
+			compatible = "st,stm32-h7-pll-pvco";
+			#clock-cells = <5>;
+			zephyr,cms-static-init;
+
+			/* Prescale stage divisor configuration */
+			reg-divm = <RCC_FIELD(PLLCKSELR, 9, 4)>;
+
+			/* VCO stage control and status */
+			reg-on = <RCC_BIT(CR, 24)>;
+			reg-rdy = <RCC_BIT(CR, 25)>;
+			reg-fracen = <RCC_BIT(PLLCFGR, 0)>;
+			reg-vcosel = <RCC_BIT(PLLCFGR, 1)>;
+			reg-range = <RCC_FIELD(PLLCFGR, 3, 2)>;
+
+			/* VCO feedback divisor configuration */
+			reg-divn = <RCC_FIELD(PLL1DIVR, 8, 0)>;
+			reg-fracn = <RCC_FIELD(PLL1FRACR, 15, 3)>;
+
+			pll1_p_ck: pll1_p: pll1_p {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 16)>;
+				reg-div = <RCC_FIELD(PLL1DIVR, 15, 9)>;
+			};
+
+			pll1_q_ck: pll1_q: pll1_q {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 17)>;
+				reg-div = <RCC_FIELD(PLL1DIVR, 22, 16)>;
+			};
+
+			pll1_r_ck: pll1_r: pll1_r {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 18)>;
+				reg-div = <RCC_FIELD(PLL1DIVR, 30, 24)>;
+			};
+		};
+
+		pll2_cms: pll2 {
+			compatible = "st,stm32-h7-pll-pvco";
+			#clock-cells = <5>;
+			zephyr,cms-static-init;
+
+			/* Prescale stage divisor configuration */
+			reg-divm = <RCC_FIELD(PLLCKSELR, 17, 12)>;
+
+			/* VCO stage control and status */
+			reg-on = <RCC_BIT(CR, 26)>;
+			reg-rdy = <RCC_BIT(CR, 27)>;
+			reg-fracen = <RCC_BIT(PLLCFGR, 4)>;
+			reg-vcosel = <RCC_BIT(PLLCFGR, 5)>;
+			reg-range = <RCC_FIELD(PLLCFGR, 7, 6)>;
+
+			/* VCO feedback divisor configuration */
+			reg-divn = <RCC_FIELD(PLL2DIVR, 8, 0)>;
+			reg-fracn = <RCC_FIELD(PLL2FRACR, 15, 3)>;
+
+			pll2_p_ck: pll2_p: pll2_p {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 19)>;
+				reg-div = <RCC_FIELD(PLL2DIVR, 15, 9)>;
+			};
+
+			pll2_q_ck: pll2_q: pll2_q {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 20)>;
+				reg-div = <RCC_FIELD(PLL2DIVR, 22, 16)>;
+			};
+
+			pll2_r_ck: pll2_r: pll2_r {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 21)>;
+				reg-div = <RCC_FIELD(PLL2DIVR, 30, 24)>;
+			};
+		};
+
+		pll3_cms: pll3 {
+			compatible = "st,stm32-h7-pll-pvco";
+			#clock-cells = <5>;
+			zephyr,cms-static-init;
+
+			/* Prescale stage divisor configuration */
+			reg-divm = <RCC_FIELD(PLLCKSELR, 25, 20)>;
+
+			/* VCO stage control and status */
+			reg-on = <RCC_BIT(CR, 28)>;
+			reg-rdy = <RCC_BIT(CR, 29)>;
+			reg-fracen = <RCC_BIT(PLLCFGR, 8)>;
+			reg-vcosel = <RCC_BIT(PLLCFGR, 9)>;
+			reg-range = <RCC_FIELD(PLLCFGR, 11, 10)>;
+
+			/* VCO feedback divisor configuration */
+			reg-divn = <RCC_FIELD(PLL3DIVR, 8, 0)>;
+			reg-fracn = <RCC_FIELD(PLL3FRACR, 15, 3)>;
+
+			pll3_p_ck: pll3_p: pll3_p {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 22)>;
+				reg-div = <RCC_FIELD(PLL3DIVR, 15, 9)>;
+			};
+
+			pll3_q_ck: pll3_q: pll3_q {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 23)>;
+				reg-div = <RCC_FIELD(PLL3DIVR, 22, 16)>;
+			};
+
+			pll3_r_ck: pll3_r: pll3_r {
+				compatible = "st,stm32-h7-pll-output";
+				#clock-cells = <1>;
+				zephyr,cms-static-init;
+
+				reg-en = <RCC_BIT(PLLCFGR, 24)>;
+				reg-div = <RCC_FIELD(PLL3DIVR, 30, 24)>;
+			};
+		};
+	};
+
+	/* Muxes */
+	sys_ck: sysclk-mux {
+		compatible = "st,stm32-clock-multiplexer";
+		#clock-cells = <1>;
+		zephyr,cms-static-init;
+
+		reg-and-field = <RCC_FIELD(CR, 2, 0)>;
+		inputs = /* 0b000: */ <&hsi_ck>,
+			 /* 0b001: */ <&csi_ck>,
+			 /* 0b010: */ <&hse_ck>,
+			 /* 0b011: */ <&pll1_p_ck>;
+			 /* Others: reserved */
+
+		d1cpre {
+			compatible = "st,stm32-bus-prescaler";
+			reg-and-field = <RCC_FIELD(D1CFGR, 11, 8)>;
+			#clock-cells = <1>;
+			ahbpre;
+			zephyr,cms-static-init;
+
+			/* TODO: CPU1 clock-output node? */
+
+			hclk: ahbpre: hpre {
+				compatible = "st,stm32-bus-prescaler";
+				reg-and-field = <RCC_FIELD(D1CFGR, 3, 0)>;
+				#clock-cells = <1>;
+				ahbpre;
+				zephyr,cms-static-init;
+
+				/* === AHB3 peripherals === */
+				/**
+				 * AHB3ENR:
+				 *	31 = AXISRAMEN
+				 *	30 = ITCMEN
+				 *	29 = DTCM2EN
+				 *	28 = DTCM1EN
+				 *	16 = SDMMC1EN
+				 *	14 = QSPIEN
+				 *	12 = FMCEN
+				 *	8 = FLITFEN
+				 *	5 = JPGDECEN
+				 *	4 = DMA2DEN
+				 *	0 = MDMAEN
+				 */
+
+				d1ppre: d1ppre {
+					compatible = "st,stm32-bus-prescaler";
+					reg-and-field = <RCC_FIELD(D1CFGR, 6, 4)>;
+					#clock-cells = <1>;
+					zephyr,cms-static-init;
+
+					/* === APB3 peripherals === */
+					/**
+					 * APB3ENR:
+					 *	6 = WWDG1EN
+					 *	4 = DSIEN
+					 *	3 = LTDCEN
+					 */
+				};
+
+				/* === AHB1 peripherals === */
+				/**
+				 * AHB1ENR:
+				 *	28 = USB2OTGHSULPIEN
+				 *	27 = USB2OTGHSEN
+				 *	26 = USB1OTGHSULPIEN
+				 *	25 = USB1OTGHSEN
+				 *	17 = ETH1RXEN
+				 *	16 = ETH1TXEN
+				 *	15 = ETH1MACEN
+				 *	14 = ARTEN
+				 *	5 = ADC12EN
+				 *	1 = DMA2EN
+				 *	0 = DMA1EN
+				 */
+
+				/* === AHB2 peripherals === */
+				/**
+				 * AHB2ENR:
+				 *	31 = SRAM3EN
+				 *	30 = SRAM2EN
+				 *	29 = SRAM1EN
+				 *	9 = SDMMC2EN
+				 *	6 = RNGEN
+				 *	5 = HASHEN
+				 *	4 = CRYPTEN
+				 *	1 = DCMIEN
+				 */
+
+				d2ppre1: d2ppre1 {
+					compatible = "st,stm32-bus-prescaler";
+					reg-and-field = <RCC_FIELD(D2CFGR, 6, 4)>;
+					#clock-cells = <1>;
+					zephyr,cms-static-init;
+
+					/* === APB1 peripherals === */
+					/**
+					 * APB1LENR:
+					 *	31 = UART8EN
+					 *	30 = UART7EN
+					 *	29 = DAC12EN
+					 *	27 = CECEN
+					 *	23 = I2C3EN
+					 *	22 = I2C2EN
+					 *	21 = I2C1EN
+					 *	20 = UART5EN
+					 *	19 = UART4EN
+					 *	18 = USART3EN
+					 *	17 = USART2EN
+					 *	16 = SPDIFRXEN
+					 *	15 = SPI3EN
+					 *	14 = SPI2EN
+					 *	11 = WWDG2EN
+					 *	9 = LPTIM1EN
+					 *	8 = TIM14EN
+					 *	7 = TIM13EN
+					 *	6 = TIM12EN
+					 *	5 = TIM7EN
+					 *	4 = TIM6EN
+					 *	3 = TIM5EN
+					 *	2 = TIM4EN
+					 *	1 = TIM3EN
+					 *	0 = TIM2EN
+					 * APB1HENR:
+					 *	8 = FDCANEN
+					 *	5 = MDIOSEN
+					 *	4 = OPAMPEN
+					 *	2 = SWPEN
+					 *	1 = CRSEN
+					 */
+
+					/* TODO: timer freqmul (w/ quad support) */
+				};
+
+				rcc_pclk2: d2ppre2: d2ppre2 {
+					compatible = "st,stm32-bus-prescaler";
+					reg-and-field = <RCC_FIELD(D2CFGR, 10, 8)>;
+					#clock-cells = <1>;
+					zephyr,cms-static-init;
+
+					/* === APB2 peripherals === */
+					/**
+					 * APB2ENR:
+					 *	29 = HRTIMEN
+					 *	28 = DFSDM1EN
+					 *	24 = SAI3EN
+					 *	23 = SAI2EN
+					 *	22 = SAI1EN
+					 *	20 = SPI5EN
+					 *	18 = TIM17EN
+					 *	17 = TIM16EN
+					 *	16 = TIM15EN
+					 *	13 = SPI4EN
+					 *	12 = SPI1EN
+					 *	5 = USART6EN
+					 *	4 = USART1EN
+					 *	1 = TIM8EN
+					 *	0 = TIM1EN
+					 */
+
+					/* TODO: timer freqmul */
+				};
+
+				/* === AHB4 peripherals === */
+				/**
+				 * AHB4ENR:
+				 *	28 = BKPRAMEN
+				 *	25 = HSEMEN
+				 *	24 = ADC3EN
+				 *	21 = BDMAEN
+				 *	19 = CRCEN
+				 *	10 = GPIOKEN
+				 *	9 = GPIOJEN
+				 *	8 = GPIOIEN
+				 *	7 = GPIOHEN
+				 *	6 = GPIOGEN
+				 *	5 = GPIOFEN
+				 *	4 = GPIOEEN
+				 *	3 = GPIODEN
+				 *	2 = GPIOCEN
+				 *	1 = GPIOBEN
+				 *	0 = GPIOAEN
+				 */
+				gpioa_gate: gpioa-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 0)>;
+
+					gpioa_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpiob_gate: gpiob-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 1)>;
+
+					gpiob_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpioc_gate: gpioc-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 2)>;
+
+					gpioc_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpiod_gate: gpiod-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 3)>;
+
+					gpiod_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpioe_gate: gpioe-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 4)>;
+
+					gpioe_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpiof_gate: gpiof-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 5)>;
+
+					gpiof_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpiog_gate: gpiog-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 6)>;
+
+					gpiog_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpioh_gate: gpioh-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 7)>;
+
+					gpioh_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpioi_gate: gpioi-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 8)>;
+
+					gpioi_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpioj_gate: gpioj-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 9)>;
+
+					gpioj_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				gpiok_gate: gpiok-gate {
+					compatible = "st,stm32-clock-gate";
+					#clock-cells = <1>;
+					reg-and-field = <RCC_BIT(AHB4ENR, 10)>;
+
+					gpiok_clk: clock-output {
+						compatible = "clock-output";
+						#clock-cells = <0>;
+					};
+				};
+
+				d3ppre: d3ppre {
+					compatible = "st,stm32-bus-prescaler";
+					reg-and-field = <RCC_FIELD(D3CFGR, 6, 4)>;
+					#clock-cells = <1>;
+					zephyr,cms-static-init;
+
+					/* === APB4 peripherals === */
+					/**
+					 * APB4ENR:
+					 *	21 = SAI4EN
+					 *	16 = ATCAPBEN
+					 *	15 = VREFEN
+					 *	14 = COMP12EN
+					 *	12 = LPTIM5EN
+					 *	11 = LPTIM4EN
+					 *	10 = LPTIM3EN
+					 *	9 = LPTIM2EN
+					 *	7 = I2C4EN
+					 *	5 = SPI6EN
+					 *	3 = LPUART1EN
+					 *	1 = SYSCFGEN
+					 */
+				};
+			};
+		};
+	};
+
+	per_ck: ck-per-mux {
+
+	};
+
+	hrtim_ck: hrtim-mux {
+		/* See Figure 55 */
+	};
+
+	/* TBD: traceclkin mux? */
+
+	/**
+	 * Other muxes:
+	 *	- Figure 56: SAI1SEL/SAI23SEL/SAI4ASEL/SAI4BSEL/DFSDM1SEL
+	 *	- Figure 57: SPDIFSEL/I2S123SEL/SPI45SEL/SPI6SEL
+	 *	- Figure 58: I2C123SEL/I2C4SEL
+	 *	- Figure 59: USART16SEL/USART234578SEL/LPUART1SEL
+	 *	- Figure 60: DSISRC
+	 *	- Figure 61: SDMMCSRC/QSPISRC/FMCSRC
+	 *	- Figure 62: USBSEL
+	 *	- Figure 63: ???
+	 *	- Figure 64: ADCSEL/SWPSEL/RNGSEL/FDCANSEL
+	 *	- Figure 65: CECSEL/LPTIM1SEL/LPTIM2SEL/LPTIM345SEL
+	 *	- RTC/AWU clock (RTCSEL + RTCPRE)
+	 */
+
+	usart16-mux {
+		compatible = "st,stm32-clock-multiplexer";
+		#clock-cells = <1>;
+
+		reg-and-field = <RCC_FIELD(D2CCIP2R, 5, 3)>;
+		inputs = /* 0b000: */ <&rcc_pclk2>,
+			 /* 0b001: */ <&pll2_q_ck>,
+			 /* 0b010: */ <&pll3_q_ck>,
+			 /* 0b011: */ <&hsi_ker_ck>,
+			 /* 0b100: */ <&csi_ker_ck>,
+			 /* 0b101: */ <&lse_ck>;
+			 /* Others: reserved */
+
+		usart1_gate: usart1-gate {
+			compatible = "st,stm32-clock-gate";
+			#clock-cells = <1>;
+			reg-and-field = <RCC_BIT(APB2ENR, 4)>;
+
+			usart1_clk: clock-output {
+				compatible = "clock-output";
+				#clock-cells = <0>;
+			};
+		};
+
+		/* TODO: usart6 */
+	};
+};
+
+/* These should be in main DTSI but are placed here to avoid conflicts */
+&gpioa    { clock-outputs = <&gpioa_clk>;  clock-output-names = "default"; };
+&gpiob    { clock-outputs = <&gpiob_clk>;  clock-output-names = "default"; };
+&gpioc    { clock-outputs = <&gpioc_clk>;  clock-output-names = "default"; };
+&gpiod    { clock-outputs = <&gpiod_clk>;  clock-output-names = "default"; };
+&gpioe    { clock-outputs = <&gpioe_clk>;  clock-output-names = "default"; };
+&gpiof    { clock-outputs = <&gpiof_clk>;  clock-output-names = "default"; };
+&gpiog    { clock-outputs = <&gpiog_clk>;  clock-output-names = "default"; };
+&gpioh    { clock-outputs = <&gpioh_clk>;  clock-output-names = "default"; };
+&gpioi    { clock-outputs = <&gpioi_clk>;  clock-output-names = "default"; };
+&gpioj    { clock-outputs = <&gpioj_clk>;  clock-output-names = "default"; };
+&gpiok    { clock-outputs = <&gpiok_clk>;  clock-output-names = "default"; };
+&usart1   { clock-outputs = <&usart1_clk>; clock-output-names = "default"; };
