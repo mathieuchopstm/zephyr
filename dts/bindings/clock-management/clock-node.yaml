@@ -16,6 +16,31 @@ properties:
     description: |
       Clock node is initialized statically during boot.
 
+  "zephyr,cms-static-disable-at-boot":
+    type: boolean
+    description: |
+      During static initialization at boot, disable this device
+      instead of enabling it (via a call to clock_management_off()).
+
+      This property is ignored if "zephyr,cms-static-init" is not set.
+
+  "zephyr,reparent-on-disabled":
+    type: boolean
+    description: |
+      If this node is disabled (status = "disabled"), children nodes
+      requesting for their parent (=this node) are redirected to
+      this node's parent, effectively skipping this node in the
+      clock tree hierarchy.
+
+      This can be used on devices for which the HW default configuration
+      is never changed to save space, as it evicts a struct clk_hw from
+      the final binary (this may also reduce stack usage and will slightly
+      speed up calls to get_rate()).
+
+      WARNING: USE THIS PROPERTY ONLY ON NODES WHERE Fout = Fin.
+      USING THIS PROPERTY ON A NODE WHICH MODIFIES FREQUENCY WILL BREAK
+      CLOCK RATE CALCULATIONS FOR THE DEVICE AND ALL ITS CHILDREN!!!
+
   "#clock-cells":
     type: int
     required: true
