@@ -8,6 +8,8 @@
 #include "pmod_connector.dtsi"
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 
+#include <st/h7/stm32h7_clocks.dtsi>
+
 / {
 	leds {
 		compatible = "gpio-leds";
@@ -121,4 +123,70 @@
 
 &mailbox {
 	status = "okay";
+};
+
+/* CLOCK MANAGEMENT */
+&hse {
+	clock-frequency = <DT_FREQ_M(25)>;
+};
+
+&pllsrc {
+	input-selection = <&hse_ck>;
+};
+
+&sys_ck {
+	input-selection = <&pll1_p_ck>;
+
+	d1cpre {
+		prescaler = <0x0>;
+	};
+};
+&ahbpre  { prescaler = <0x8>; };
+&d1ppre  { prescaler = <0x8>; };
+&d2ppre1 { prescaler = <0x8>; };
+&d2ppre2 { prescaler = <0x8>; };
+&d3ppre  { prescaler = <0x8>; };
+
+&pll1_cms {
+	/**
+	 * HSE @ 25 MHz + DIVM=5
+	 * --> ref1_ck = 5 MHz
+	 *
+	 * Resulting configuration:
+	 * --> VCOSEL = 0b0  (VCOH)
+	 * --> Range  = 0b10 (4~8MHz)
+	 *
+	 * ref1_ck @ 5 MHz + DIVN = 160
+	 * --> vco1_ck = 800 MHz
+	 */
+	vcosel = <0>;
+	range = <0x2>;
+
+	divm = <5>;
+	divn = <160>;
+	fracn = <0>;
+
+	/**
+	 * P/R output @ 400 MHz
+	 *   Q output @ 200 MHz
+	 */
+	pll1_p { div = <2>; };
+	pll1_q { div = <4>; };
+	pll1_r { div = <2>; };
+};
+
+&pll2_cms {
+	status = "disabled";
+
+	pll2_p { status = "disabled"; };
+	pll2_q { status = "disabled"; };
+	pll2_r { status = "disabled"; };
+};
+
+&pll3_cms {
+	status = "disabled";
+
+	pll3_p { status = "disabled"; };
+	pll3_q { status = "disabled"; };
+	pll3_r { status = "disabled"; };
 };

@@ -2,5 +2,14 @@ board:
   name: stm32h747i_disco
   full_name: STM32H747I Discovery
   vendor: st
+  revision:
+    format: letter
+    default: "O"
+    exact: true
+    revisions:
+      # "V"anilla (no Clock Management)
+      - name: "V"
+      # "L"ightweight (Clock Management + STM32 drivers + OFF_ON)
+      - name: "L"
   socs:
     - name: stm32h747xx
