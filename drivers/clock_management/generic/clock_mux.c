@@ -22,7 +22,7 @@ struct clock_mux_config {
 
 static int clock_mux_get_rate(const struct clk *clk_hw)
 {
-	struct clock_mux_config *config = clk_hw->hw_data;
+	const struct clock_mux_config *config = clk_hw->hw_data;
 	uint32_t regval = sys_read32(config->mux_reg);
 	uint32_t parent_idx = (regval & config->mux_mask) >> config->mux_shift;
 
@@ -31,7 +31,7 @@ static int clock_mux_get_rate(const struct clk *clk_hw)
 
 static int clock_mux_configure(const struct clk *clk_hw, const void *data)
 {
-	struct clock_mux_config *config = clk_hw->hw_data;
+	const struct clock_mux_config *config = clk_hw->hw_data;
 	uint8_t new_parent_index = (uint8_t)(uintptr_t)data;
 	uint32_t regval;
 
@@ -65,7 +65,7 @@ const struct clock_management_driver_api clock_mux_api = {
 		DT_INST_PROP(inst, mux_offset))
 
 #define CLOCK_MUX_DEFINE(inst)							\
-	struct clock_mux_config clock_mux_##inst = {				\
+	const struct clock_mux_config clock_mux_##inst = {			\
 		.num_parents = DT_INST_PROP_LEN(inst, inputs),			\
 		.mux_reg = DT_INST_REG_ADDR(inst),				\
 		.mux_mask = MUX_MASK(inst),					\

@@ -21,6 +21,10 @@ extern "C" {
 #define Z_CLOCK_MANAGEMENT_CLOCK_SOURCE_DATA_GET(node_id, prop, idx)      \
 	DT_PHA_BY_IDX(node_id, prop, idx, gate)
 
+
+/* PLACEHOLDER HACK!!! */
+#define Z_CLOCK_MANAGEMENT_CLOCK_MUX_INIT_DATA_GET(n) NULL
+
 /** @endcond */
 
 #ifdef __cplusplus

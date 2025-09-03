@@ -1,36 +1,93 @@
-/* Replace compatible on nodes where a generic driver is available */
+/**
+ * Boilerplate due to usage of 'reg' property
+ */
+&clock_tree_root {
+	#address-cells = <1>;
+	#size-cells = <1>;
+};
+
+&hclk {
+	#address-cells = <1>;
+	#size-cells = <1>;
+};
+
+&pclk {
+	#address-cells = <1>;
+	#size-cells = <1>;
+};
+
+&usart1_mux {
+	#address-cells = <1>;
+	#size-cells = <1>;
+};
+
+/*
+ * Replace compatible on nodes where a generic driver is available.
+ * Also add generic properties and delete STM32-specific ones.
+ * HACK: does not support static init! image will NOT work!
+ */
+
 &sysclk_mux {
 	compatible = "clock-mux";
+	reg = <RCC_CFGR 3>;
+	mux-offset = <0>;
+	/delete-property/ reg-and-field;
+	/delete-property/ input-selection;
 };
 
 &usart1_mux {
 	compatible = "clock-mux";
+	reg = <RCC_CCIPR 2>;
+	mux-offset = <0>;
+	/delete-property/ reg-and-field;
+	/delete-property/ input-selection;
 };
 
 &usart1_gate {
 	compatible = "clock-gate";
+	reg = <RCC_APBENR2 1>;
+	gate-offset = <14>;
+	/delete-property/ reg-and-field;
 };
 
 &usart2_gate {
 	compatible = "clock-gate";
+	reg = <RCC_APBENR1 1>;
+	gate-offset = <17>;
+	/delete-property/ reg-and-field;
 };
 
 &gpioa_gate {
 	compatible = "clock-gate";
+	reg = <RCC_IOPENR 1>;
+	gate-offset = <0>;
+	/delete-property/ reg-and-field;
 };
 
 &gpiob_gate {
 	compatible = "clock-gate";
+	reg = <RCC_IOPENR 1>;
+	gate-offset = <1>;
+	/delete-property/ reg-and-field;
 };
 
 &gpioc_gate {
 	compatible = "clock-gate";
+	reg = <RCC_IOPENR 1>;
+	gate-offset = <2>;
+	/delete-property/ reg-and-field;
 };
 
 &gpiod_gate {
 	compatible = "clock-gate";
+	reg = <RCC_IOPENR 1>;
+	gate-offset = <3>;
+	/delete-property/ reg-and-field;
 };
 
 &gpiof_gate {
 	compatible = "clock-gate";
+	reg = <RCC_IOPENR 1>;
+	gate-offset = <5>;
+	/delete-property/ reg-and-field;
 };

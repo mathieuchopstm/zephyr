@@ -94,14 +94,14 @@ void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected);
 
 #else
 
-static inline uint32_t stm32_clk_read_field(const struct stm32_reg_field field)
+static ALWAYS_INLINE uint32_t stm32_clk_read_field(const struct stm32_reg_field field)
 {
 	uint32_t regval = sys_read32(RCC_ADDR + field.reg_offset);
 
 	return (regval >> field.offset) & field.mask;
 }
 
-static inline void stm32_clk_write_field(const struct stm32_reg_field field, uint32_t val)
+static ALWAYS_INLINE void stm32_clk_write_field(const struct stm32_reg_field field, uint32_t val)
 {
 	const mem_addr_t addr = RCC_ADDR + field.reg_offset;
 	uint32_t regval = sys_read32(addr);
@@ -112,7 +112,7 @@ static inline void stm32_clk_write_field(const struct stm32_reg_field field, uin
 	sys_write32(regval, addr);
 }
 
-static inline void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected)
+static ALWAYS_INLINE void stm32_clk_poll_field(struct stm32_reg_field field, uint32_t expected)
 {
 	const mem_addr_t addr = RCC_ADDR + field.reg_offset;
 	const uint32_t mask = field.mask << field.offset;
