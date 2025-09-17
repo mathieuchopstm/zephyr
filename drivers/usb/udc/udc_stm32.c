@@ -45,19 +45,21 @@ LOG_MODULE_REGISTER(udc_stm32, CONFIG_UDC_DRIVER_LOG_LEVEL);
 #define UDC_PHY(node_id)			DT_PROP_BY_IDX(node_id, phys, 0)
 
 /** Evaluates to 1 if PHY of @p usb_node is an embedded PHY, 0 otherwise. */
-#define UDC_STM32_PHY_IS_EMBEDDED(usb_node)	UTIL_OR(UTIL_OR(		\
+#define UDC_STM32_PHY_IS_EMBEDDED(usb_node)	UTIL_OR(UTIL_OR(UTIL_OR(	\
 	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32_usbphyc),		\
 	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32u5_otghs_phy)),		\
-	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32_embedded_usb_phy))
+	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32_embedded_usb_phy)),	\
+	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32_embedded_otghs_phy))
 
 /**
  * Evaluates to 1 if PHY of @p usb_node is an embedded HS PHY, 0 otherwise.
  *
  * @note Undefined behavior if UDC_PHY_IS_EMBEDDED(usb_node) is not 1.
  */
-#define UDC_STM32_EMBEDDED_PHY_IS_HS(usb_node)	UTIL_OR(UTIL_OR(		\
+#define UDC_STM32_EMBEDDED_PHY_IS_HS(usb_node)	UTIL_OR(UTIL_OR(UTIL_OR(	\
 	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32_usbphyc),		\
 	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32u5_otghs_phy)),		\
+	DT_NODE_HAS_COMPAT(UDC_PHY(usb_node), st_stm32_embedded_otghs_phy)),	\
 	DT_PROP(UDC_PHY(usb_node), high_speed))
 
 /** Evaluates to 1 if @p inst can run in High-Speed mode, 0 otherwise. */
@@ -1245,6 +1247,28 @@ static int priv_clock_enable(void)
 		LOG_INF("PWR not active yet");
 		k_sleep(K_MSEC(100));
 	}
+#elif defined(CONFIG_SOC_SERIES_STM32H7RSX)
+	/* Enable VDD33USB voltage detector (mandatory for USB usage) */
+	LL_PWR_EnableUSBVoltageDetector();
+	while (!LL_PWR_IsEnabledUSBVoltageDetector()) {
+
+	}
+
+	k_busy_wait(10);
+
+	if (!LL_PWR_IsActiveFlag_USB33RDY()) {
+		/*
+		 * No external power supply providing VDD33USB:
+		 * enable the SoC's internal voltage regulator.
+		 */
+		printk("ena usb reg\n");
+		LL_PWR_EnableUSBReg();
+	}
+
+	if (DT_HAS_COMPAT_STATUS_OKAY(st_stm32_otghs)) {
+		/* Enable HS PHY power regulator if OTG_HS is used */
+		LL_PWR_EnableUSBHSPHYReg();
+	}
 #endif
 
 	if (DT_INST_NUM_CLOCKS(0) > 1) {
@@ -1260,7 +1284,7 @@ static int priv_clock_enable(void)
 		return -EIO;
 	}
 
-	if (IS_ENABLED(CONFIG_UDC_STM32_CLOCK_CHECK)) {
+	if (IS_ENABLED(CONFIG_UDC_STM32_CLOCK_CHECK) && DT_INST_NUM_CLOCKS(0) > 1) {
 		uint32_t usb_clock_rate;
 
 		if (clock_control_get_rate(clk,
@@ -1298,7 +1322,7 @@ static int priv_clock_enable(void)
 	/* Enable ULPI interface clock if external HS PHY is used */
 	#if defined(CONFIG_SOC_SERIES_STM32H7X)
 		LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_USB1OTGHSULPI);
-	#else
+	#elif defined(LL_AHB1_GRP1_PERIPH_OTGHSULPI)
 		LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_OTGHSULPI);
 	#endif
 #else
@@ -1326,6 +1350,25 @@ static int priv_clock_enable(void)
 
 		/* Peripheral OTGPHY clock enable */
 		LL_AHB5_GRP1_EnableClock(LL_AHB5_GRP1_PERIPH_OTGPHY1);
+	#elif DT_HAS_COMPAT_STATUS_OKAY(st_stm32_embedded_otghs_phy)
+		#define H7RS_HS_PHY	DT_INST(0, st_stm32_embedded_otghs_phy)
+
+		static const struct stm32_pclken phy_pclken[] = STM32_DT_CLOCKS(H7RS_HS_PHY);
+		BUILD_ASSERT(DT_NUM_CLOCKS(H7RS_HS_PHY) >= 2, "OTGHS PHY not properly configured");
+
+		LL_RCC_SetUSBREFClockSource(CONCAT(LL_RCC_USBREF_CLKSOURCE_,
+			DT_STRING_TOKEN(H7RS_HS_PHY, input_frequency)));
+
+		if (clock_control_configure(clk,
+				(clock_control_subsys_t *)&phy_pclken[1], NULL) != 0) {
+			LOG_ERR("Could not configure OTG HS PHY mux");
+			return -EIO;
+		}
+
+		if (clock_control_on(clk, (clock_control_subsys_t *)&phy_pclken[0]) != 0) {
+			LOG_ERR("Could not enable OTG HS PHY clock");
+			return -EIO;
+		}
 	#elif defined(LL_APB2_GRP1_PERIPH_OTGPHYC)
 		LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_OTGPHYC);
 	#elif defined(LL_AHB2_GRP1_PERIPH_USBPHY) /* U5 */

@@ -228,3 +228,14 @@
 		};
 	};
 };
+
+zephyr_udc0: &usbotg_hs {
+	pinctrl-0 = <&usb_otg_hs_dm_pm5 &usb_otg_hs_dp_pm6>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&otghs_phy {
+	status = "okay";
+	input-frequency = "24M";
+};
