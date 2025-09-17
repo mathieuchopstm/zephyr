@@ -142,7 +142,6 @@ struct udc_stm32_data  {
 
 struct udc_stm32_config {
 	uint32_t num_endpoints;
-	uint32_t pma_offset;
 	uint32_t dram_size;
 	uint16_t ep_mps;
 };
@@ -599,7 +598,12 @@ static inline void udc_stm32_mem_init(const struct device *dev)
 	struct udc_stm32_data *priv = udc_get_private(dev);
 	const struct udc_stm32_config *cfg = dev->config;
 
-	priv->occupied_mem = cfg->pma_offset;
+	/**
+	 * Endpoint configuration table is placed at the
+	 * beggining of Private Memory Area and consumes
+	 * 8 bytes for each endpoint.
+	 */
+	priv->occupied_mem = (8 * USB_NUM_BIDIR_ENDPOINTS);
 }
 
 static int udc_stm32_ep_mem_config(const struct device *dev,
@@ -639,15 +643,10 @@ static void udc_stm32_mem_init(const struct device *dev)
 
 	LOG_DBG("DRAM size: %ub", cfg->dram_size);
 
-	if (cfg->ep_mps % 4) {
-		LOG_ERR("Not a 32-bit word multiple: ep(%u)", cfg->ep_mps);
-		return;
-	}
-
 	/* The documentation is not clear at all about RX FiFo size requirement,
 	 * 160 has been selected through trial and error.
 	 */
-	words = MAX(160, cfg->ep_mps / 4);
+	words = MAX(160, DIV_ROUND_UP(cfg->ep_mps, 4U));
 	HAL_PCDEx_SetRxFiFo(&priv->pcd, words);
 	priv->occupied_mem = words * 4;
 
@@ -673,8 +672,8 @@ static int udc_stm32_ep_mem_config(const struct device *dev,
 		return 0;
 	}
 
-	words = MIN(udc_mps_ep_size(ep), cfg->ep_mps) / 4;
-	words = (words <= 64) ? words * 2 : words;
+	/* FIFO allocations granularity is 32-bit word */
+	words = DIV_ROUND_UP(MIN(udc_mps_ep_size(ep), cfg->ep_mps), 4U);
 
 	if (!enable) {
 		if (priv->occupied_mem >= (words * 4)) {
@@ -1069,19 +1068,16 @@ static const struct udc_api udc_stm32_api = {
  * Kconfig system.
  */
 #define USB_NUM_BIDIR_ENDPOINTS	DT_INST_PROP(0, num_bidir_endpoints)
+#define USB_RAM_SIZE	DT_INST_PROP(0, ram_size)
 
 #if defined(USB) || defined(USB_DRD_FS)
 #define EP_MPS 64U
-#define USB_BTABLE_SIZE  (8 * USB_NUM_BIDIR_ENDPOINTS)
-#define USB_RAM_SIZE	DT_INST_PROP(0, ram_size)
 #else /* USB_OTG_FS */
 #if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_otghs)
 #define EP_MPS USB_OTG_HS_MAX_PACKET_SIZE
 #elif DT_HAS_COMPAT_STATUS_OKAY(st_stm32_otgfs) || DT_HAS_COMPAT_STATUS_OKAY(st_stm32_usb)
 #define EP_MPS USB_OTG_FS_MAX_PACKET_SIZE
 #endif
-#define USB_RAM_SIZE	DT_INST_PROP(0, ram_size)
-#define USB_BTABLE_SIZE 0
 #endif /* USB */
 
 static struct udc_stm32_data udc0_priv;
@@ -1094,7 +1090,6 @@ static struct udc_data udc0_data = {
 static const struct udc_stm32_config udc0_cfg  = {
 	.num_endpoints = USB_NUM_BIDIR_ENDPOINTS,
 	.dram_size = USB_RAM_SIZE,
-	.pma_offset = USB_BTABLE_SIZE,
 	.ep_mps = EP_MPS,
 };
 
