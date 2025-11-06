@@ -23,6 +23,9 @@ config SOC_SERIES_STM32N6X
 	# MPU_GAP_FILLING is default when !USERSPACE, select it in the other case as well.
 	select MPU_GAP_FILLING if USERSPACE
 	select CPU_HAS_CUSTOM_FIXED_SOC_MPU_REGIONS if USERSPACE && !XIP
+	# Allow BackupRAM function access
+	select USE_STM32_HAL_PWR
+	select USE_STM32_HAL_PWR_EX
 
 if SOC_SERIES_STM32N6X
 

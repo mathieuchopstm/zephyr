@@ -66,4 +66,8 @@ void soc_early_init_hook(void)
 	/* Set Vdd IO2 and IO3 to 1.8V */
 	LL_PWR_SetVddIO2VoltageRange(LL_PWR_VDDIO_VOLTAGE_RANGE_1V8);
 	LL_PWR_SetVddIO3VoltageRange(LL_PWR_VDDIO_VOLTAGE_RANGE_1V8);
+
+	/* Enable backupsram access and retention */
+	HAL_PWR_EnableBkUpAccess();
+	HAL_PWREx_EnableBkupRAMRetention();
 }
