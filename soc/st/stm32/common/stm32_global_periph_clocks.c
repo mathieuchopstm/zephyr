@@ -94,7 +94,7 @@ static void disable_periph_clock_gate(enum stm32_global_peripheral_id periph_id)
 	/** TODO: */
 }
 
-void stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id)
+void _stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id)
 {
 	__ASSERT(IN_RANGE(periph_id, 0, STM32_GLOBAL_PERIPH_NUM - 1),
 		"Invalid peripheral ID %d", periph_id);
@@ -113,7 +113,7 @@ void stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id)
 	}
 }
 
-void stm32_global_periph_release(enum stm32_global_peripheral_id periph_id)
+void _stm32_global_periph_release(enum stm32_global_peripheral_id periph_id)
 {
 	__ASSERT(IN_RANGE(periph_id, 0, STM32_GLOBAL_PERIPH_NUM - 1),
 		"Invalid peripheral ID %d", periph_id);

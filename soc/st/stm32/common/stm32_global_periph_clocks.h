@@ -10,6 +10,7 @@
  *
  * @internal
  * Keep the list in increasing order starting from zero.
+ * The list must not go over 32 entries (0~31).
  * @endinternal
  */
 enum stm32_global_peripheral_id {
@@ -46,7 +47,16 @@ enum stm32_global_peripheral_id {
  * count for @p periph_id is incremented unconditionally.
  * @endinternal
  */
-void stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id);
+static inline void stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id) {
+	extern void _stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id);
+
+	if (CONFIG_STM32_GLOBAL_CLOCKS_ALWAYS_ON_MASK & (1U << (unsigned int)periph_id)) {
+		/* Don't do anything for always-on clocks */
+		return;
+	}
+
+	_stm32_global_periph_refer(periph_id);
+}
 
 /**
  * @brief Release reference to global peripheral @p periph_id
@@ -62,7 +72,16 @@ void stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id);
  * reference count has become 0.
  * @endinternal
  */
-void stm32_global_periph_release(enum stm32_global_peripheral_id periph_id); //OR: "_unref"?
+void stm32_global_periph_release(enum stm32_global_peripheral_id periph_id) { //OR: "_unref"?
+	extern void _stm32_global_periph_refer(enum stm32_global_peripheral_id periph_id);
+
+	if (CONFIG_STM32_GLOBAL_CLOCKS_ALWAYS_ON_MASK & (1U << (unsigned int)periph_id)) {
+		/* Don't do anything for always-on clocks */
+		return;
+	}
+
+	_stm32_global_periph_release(periph_id);
+}
 #else /* !CONFIG_STM32_GLOBAL_CLOCKS_RUNTIME_GATING */
 /*
  * When runtime clock gating is disabled, the RCC callback becomes
