@@ -49,6 +49,13 @@
 		zephyr,memory-region = "AXISRAM2";
 	};
 
+	bkpsram: memory@3c000000 {
+		reg = <0x3c000000 0x2000>;
+		compatible = "zephyr,memory-region", "mmio-sram";
+		zephyr,memory-attr = <DT_MEM_ARM(ATTR_MPU_RAM)>;
+		zephyr,memory-region = "BKPSRAM";
+	};
+
 	clocks {
 		clk_hse: clk-hse {
 			#clock-cells = <0>;
