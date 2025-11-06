@@ -21,9 +21,6 @@
  */
 void config_enable_default_clocks(void)
 {
-	/* Enable the power interface clock */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-
 #if IS_ENABLED(STM32_HSI48_CRS_USB_SOF)
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_CRS);
 	LL_CRS_SetSyncSignalSource(LL_CRS_SYNC_SOURCE_USB);

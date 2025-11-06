@@ -108,9 +108,6 @@ uint32_t get_ck48_frequency(void)
  */
 void config_enable_default_clocks(void)
 {
-	/* Enable the power interface clock */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-
 #if defined(CRS)
 	if (IS_ENABLED(STM32_HSI48_CRS_USB_SOF)) {
 		LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_CRS);

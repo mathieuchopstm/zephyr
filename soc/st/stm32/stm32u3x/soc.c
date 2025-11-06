@@ -38,7 +38,4 @@ void soc_early_init_hook(void)
 	/* Update CMSIS SystemCoreClock variable (HCLK) */
 	/* The MSIS is used as system clock source after startup from reset,configured at 12 MHz. */
 	SystemCoreClock = 12000000;
-
-	/* Enable power controller bus clock for other drivers */
-	LL_AHB1_GRP2_EnableClock(LL_AHB1_GRP2_PERIPH_PWR);
 }

@@ -19,6 +19,7 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <stm32_backup_domain.h>
+#include <stm32_global_periph_clocks.h>
 
 /* Macros to fill up prescaler values */
 #define z_hsi_divider(v) LL_RCC_HSI_DIV_ ## v
@@ -438,6 +439,8 @@ static uint32_t get_vco_output_range(uint32_t vco_input_range)
 
 static void set_regu_voltage(uint32_t hclk_freq)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	if (hclk_freq <= MHZ(100)) {
 		LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE3);
 	} else if (hclk_freq <= MHZ(150)) {
@@ -449,6 +452,8 @@ static void set_regu_voltage(uint32_t hclk_freq)
 	}
 	while (LL_PWR_IsActiveFlag_VOS() == 0) {
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }
 
 __unused

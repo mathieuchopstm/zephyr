@@ -65,8 +65,9 @@ static void stm32g0_disable_dead_battery(void)
 	}
 
 	if (strobe != 0) {
-		LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 		LL_SYSCFG_DisableDBATT(strobe);
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 	}
 #endif /* SYSCFG_CFGR1_UCPD1_STROBE || SYSCFG_CFGR1_UCPD2_STROBE */
 }

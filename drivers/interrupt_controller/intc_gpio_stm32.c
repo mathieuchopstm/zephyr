@@ -26,6 +26,8 @@
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/irq.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include "stm32_hsem.h"
 #include "intc_exti_stm32_priv.h"
 
@@ -296,6 +298,7 @@ void stm32_exti_set_line_src_port(gpio_pin_t line, uint32_t port)
 #endif
 
 	z_stm32_hsem_lock(CFG_HW_EXTI_SEMID, HSEM_LOCK_DEFAULT_RETRY);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 
 #ifdef CONFIG_SOC_SERIES_STM32F1X
 	LL_GPIO_AF_SetEXTISource(port, ll_line);
@@ -309,6 +312,7 @@ void stm32_exti_set_line_src_port(gpio_pin_t line, uint32_t port)
 #else
 	LL_SYSCFG_SetEXTISource(port, ll_line);
 #endif
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 	z_stm32_hsem_unlock(CFG_HW_EXTI_SEMID);
 }
 
@@ -316,6 +320,8 @@ uint32_t stm32_exti_get_line_src_port(gpio_pin_t line)
 {
 	uint32_t ll_line = stm32_exti_linenum_to_src_cfg_line(line);
 	uint32_t port;
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 
 #ifdef CONFIG_SOC_SERIES_STM32F1X
 	port = LL_GPIO_AF_GetEXTISource(ll_line);
@@ -328,6 +334,8 @@ uint32_t stm32_exti_get_line_src_port(gpio_pin_t line)
 #else
 	port = LL_SYSCFG_GetEXTISource(ll_line);
 #endif
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 
 #if defined(CONFIG_SOC_SERIES_STM32L0X) && defined(LL_SYSCFG_EXTI_PORTH)
 	/*

@@ -25,6 +25,8 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/irq.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include "spi_nor.h"
 #include "jesd216.h"
 
@@ -2118,9 +2120,13 @@ static int flash_stm32_xspi_init(const struct device *dev)
 		return -ENOTSUP;
 	}
 #if defined(CONFIG_SOC_SERIES_STM32H7RSX)
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 	LL_PWR_EnableXSPIM2();
 	__HAL_RCC_SBS_CLK_ENABLE();
 	LL_SBS_EnableXSPI2SpeedOptim();
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif /* CONFIG_SOC_SERIES_STM32H7RSX */
 
 	/* Signals configuration */

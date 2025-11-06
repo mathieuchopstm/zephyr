@@ -43,6 +43,8 @@
 #define ADC_CONTEXT_ENABLE_ON_COMPLETE
 #include "adc_context.h"
 
+#include <stm32_global_periph_clocks.h>
+
 #define LOG_LEVEL CONFIG_ADC_LOG_LEVEL
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(adc_stm32);
@@ -1587,21 +1589,33 @@ static int adc_stm32_set_clock(const struct device *dev)
 
 static void adc_stm32_enable_analog_supply(void)
 {
+	if (IS_ENABLED(CONFIG_SOC_SERIES_STM32N6X) ||
+	    IS_ENABLED(CONFIG_SOC_SERIES_STM32U5X) ||
+	    IS_ENABLED(CONFIG_SOC_SERIES_STM32U3X)) {
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #if defined(CONFIG_SOC_SERIES_STM32N6X)
-	LL_PWR_EnableVddADC();
+		LL_PWR_EnableVddADC();
 #elif defined(CONFIG_SOC_SERIES_STM32U5X) || defined(CONFIG_SOC_SERIES_STM32U3X)
-	LL_PWR_EnableVDDA();
+		LL_PWR_EnableVDDA();
 #endif /* CONFIG_SOC_SERIES_STM32U5X */
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+	}
 }
 
 #ifdef CONFIG_PM_DEVICE
 static void adc_stm32_disable_analog_supply(void)
 {
+	if (IS_ENABLED(CONFIG_SOC_SERIES_STM32N6X) ||
+	    IS_ENABLED(CONFIG_SOC_SERIES_STM32U5X) ||
+	    IS_ENABLED(CONFIG_SOC_SERIES_STM32U3X)) {
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #if defined(CONFIG_SOC_SERIES_STM32N6X)
 	LL_PWR_DisableVddADC();
 #elif defined(CONFIG_SOC_SERIES_STM32U5X) || defined(CONFIG_SOC_SERIES_STM32U3X)
 	LL_PWR_DisableVDDA();
 #endif /* CONFIG_SOC_SERIES_STM32U5X */
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+	}
 }
 #endif
 

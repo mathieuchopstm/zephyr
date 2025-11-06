@@ -21,6 +21,8 @@
 #endif /* CONFIG_PM_DEVICE */
 #include <linklayer_plat_local.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <zephyr/sys/byteorder.h>
 
 #include "blestack.h"
@@ -561,10 +563,12 @@ static int radio_pm_action(const struct device *dev, enum pm_device_action actio
 	case PM_DEVICE_ACTION_RESUME:
 		LL_AHB5_GRP1_EnableClock(LL_AHB5_GRP1_PERIPH_RADIO);
 #if defined(CONFIG_PM_S2RAM)
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		if (LL_PWR_IsActiveFlag_SB() == 1U) {
 			/* Put the radio in active state */
 			link_layer_register_isr();
 		}
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif /* CONFIG_PM_S2RAM */
 		LINKLAYER_PLAT_NotifyWFIExit();
 		ll_sys_dp_slp_exit();

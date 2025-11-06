@@ -18,6 +18,8 @@
 
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <stm32wbaxx_ll_bus.h>
 #include <stm32wbaxx_ll_cortex.h>
 #include <stm32wbaxx_ll_pwr.h>
@@ -208,6 +210,8 @@ static void set_mode_stop_exit(uint8_t substate_id)
 /* Invoke Low Power/System Off specific Tasks */
 void pm_state_set(enum pm_state state, uint8_t substate_id)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	switch (state) {
 	case PM_STATE_SUSPEND_TO_IDLE:
 		set_mode_stop_enter(substate_id);
@@ -230,6 +234,8 @@ void pm_state_set(enum pm_state state, uint8_t substate_id)
 /* Handle SOC specific activity after Low Power Mode Exit */
 void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 {
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+
 	/*
 	 * System is now in active mode.
 	 * Reenable interrupts which were disabled
@@ -242,8 +248,6 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 void stm32_power_init(void)
 {
 
-	LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_PWR);
-
 #ifdef CONFIG_DEBUG
 	LL_DBGMCU_EnableDBGStandbyMode();
 	LL_DBGMCU_APB7_GRP1_FreezePeriph(LL_DBGMCU_APB7_GRP1_RTC_STOP);
@@ -251,6 +255,8 @@ void stm32_power_init(void)
 #else
 	LL_DBGMCU_DisableDBGStandbyMode();
 #endif
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	/* Enable SRAM full retention */
 	LL_PWR_SetSRAM1SBRetention(LL_PWR_SRAM1_SB_FULL_RETENTION);
@@ -261,6 +267,8 @@ void stm32_power_init(void)
 
 	/* Enabling  Ultra Low power mode */
 	LL_PWR_EnableUltraLowPowerMode();
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	LL_FLASH_EnableSleepPowerDown();
 }

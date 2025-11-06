@@ -20,6 +20,8 @@
 #include <zephyr/pm/pm.h>
 #include <zephyr/init.h>
 
+#include <stm32_global_periph_clocks.h>
+
 LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
 
 BUILD_ASSERT(DT_SAME_NODE(DT_CHOSEN(zephyr_cortex_m_idle_timer), DT_NODELABEL(rtc)),
@@ -28,6 +30,7 @@ BUILD_ASSERT(DT_SAME_NODE(DT_CHOSEN(zephyr_cortex_m_idle_timer), DT_NODELABEL(rt
 void pm_state_set(enum pm_state state, uint8_t substate_id)
 {
 	ARG_UNUSED(substate_id);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	switch (state) {
 	case PM_STATE_SUSPEND_TO_IDLE:
@@ -68,6 +71,8 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		break;
 	}
 
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+
 	/*
 	 * System is now in active mode. Reenable interrupts which were
 	 * disabled when OS started idling code.
@@ -77,8 +82,4 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 
 void stm32_power_init(void)
 {
-	/* Enable Power clock. It should by done by default, but make sure to
-	 * enable it for all STM32F4x chips.
-	 */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 }

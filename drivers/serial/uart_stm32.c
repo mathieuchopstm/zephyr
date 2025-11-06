@@ -47,6 +47,8 @@
 #include <zephyr/mem_mgmt/mem_attr.h>
 #include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <zephyr/logging/log.h>
 #include <zephyr/irq.h>
 LOG_MODULE_REGISTER(uart_stm32, CONFIG_UART_LOG_LEVEL);
@@ -133,7 +135,9 @@ static void uart_stm32_pm_enable_wakeup_line(uint32_t wakeup_line)
 	 * If SoC is equipped with LPUART instance,
 	 * enable the associated wake-up line in PWRC.
 	 */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_EnableInternWU2();
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif /* PWR_CR3_EIWL2 */
 #else
 	if (wakeup_line != STM32_WAKEUP_LINE_NONE) {

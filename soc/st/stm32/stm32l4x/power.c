@@ -16,6 +16,7 @@
 #include <stm32l4xx_ll_system.h>
 #include <clock_control/clock_stm32_ll_common.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
+#include <stm32_global_periph_clocks.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
@@ -57,6 +58,8 @@ void set_mode_stop(uint8_t substate_id)
 /* Invoke Low Power/System Off specific Tasks */
 void pm_state_set(enum pm_state state, uint8_t substate_id)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	switch (state) {
 	case PM_STATE_SUSPEND_TO_IDLE:
 		set_mode_stop(substate_id);
@@ -111,12 +114,10 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		break;
 	}
 
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }
 
 /* Initialize STM32 Power */
 void stm32_power_init(void)
 {
-
-	/* enable Power clock */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 }

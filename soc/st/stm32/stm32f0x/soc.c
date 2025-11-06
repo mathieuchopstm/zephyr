@@ -17,6 +17,8 @@
 
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #if defined(CONFIG_SW_VECTOR_RELAY) || defined(CONFIG_SW_VECTOR_RELAY_CLIENT)
 extern void *_vector_table_pointer;
 #endif
@@ -53,7 +55,10 @@ void relocate_vector_table(void)
 	size_t vector_size = (size_t)_vector_end - (size_t)_vector_start;
 
 	memcpy(_ram_vector_start, _vector_start, vector_size);
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 	LL_SYSCFG_SetRemapMemory(LL_SYSCFG_REMAP_SRAM);
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 #endif
 }
 

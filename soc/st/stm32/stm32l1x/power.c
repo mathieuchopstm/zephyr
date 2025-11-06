@@ -8,6 +8,8 @@
 #include <stm32l1xx_ll_cortex.h>
 #include <stm32l1xx_ll_pwr.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/pm.h>
@@ -16,6 +18,8 @@ LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
 
 __weak void pm_state_set(enum pm_state state, uint8_t substate_id)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	switch (state) {
 	case PM_STATE_RUNTIME_IDLE:
 		LL_LPM_DisableEventOnPend();
@@ -67,6 +71,8 @@ __weak void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		LOG_DBG("Unsupported power substate-id %u", state);
 		break;
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/*
 	 * System is now in active mode. Reenable interrupts which were

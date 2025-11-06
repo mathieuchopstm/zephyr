@@ -8,6 +8,8 @@
 #include <soc.h>
 #include <zephyr/init.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <stm32h5xx_ll_cortex.h>
 #include <stm32h5xx_ll_pwr.h>
 #include <clock_control/clock_stm32_ll_common.h>
@@ -22,6 +24,9 @@ void pm_state_set(enum pm_state state, uint8_t substate_id)
 		LOG_DBG("Unsupported power state %u", state);
 		return;
 	}
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 
 	switch (substate_id) {
 	case 1: /* this corresponds to the STOP mode: */
@@ -58,6 +63,8 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		/* need to restore the clock */
 		stm32_clock_control_init(NULL);
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/*
 	 * System is now in active mode.

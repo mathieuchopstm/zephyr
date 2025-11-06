@@ -21,6 +21,8 @@
 #include <zephyr/arch/common/sys_bitops.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 
+#include <stm32_global_periph_clocks.h>
+
 /* Driver definitions */
 #define RCC_REG(_reg_offset) (DT_REG_ADDR(STM32_CLOCK_CONTROL_NODE) + (_reg_offset))
 #define RADIO_CTRL_IRQn		21	/* Not provided by CMSIS; must be declared manually */
@@ -570,8 +572,11 @@ static void set_up_fixed_clock_sources(void)
 		/* Configure driving capability */
 		LL_RCC_LSE_SetDriveCapability(STM32_LSE_DRIVING << RCC_CSSWCR_LSEDRV_Pos);
 #endif
+
 		/* Unconditionally disable pull-up & pull-down on LSE pins */
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		LL_PWR_SetNoPullB(LL_PWR_GPIO_BIT_12 | LL_PWR_GPIO_BIT_13);
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 		if (IS_ENABLED(STM32_LSE_BYPASS)) {
 			/* Configure LSE bypass */
@@ -715,9 +720,6 @@ int stm32_clock_control_init(const struct device *dev)
 			? LL_FLASH_LATENCY_1
 			: LL_FLASH_LATENCY_0
 	);
-
-	/* Unconditionally enable SYSCFG clock for other drivers */
-	LL_APB0_GRP1_EnableClock(LL_APB0_GRP1_PERIPH_SYSCFG);
 
 	/* Set up indiviual enabled clocks */
 	set_up_fixed_clock_sources();

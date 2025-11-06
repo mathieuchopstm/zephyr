@@ -892,9 +892,6 @@ static void set_up_fixed_clock_sources(void)
 	}
 
 	if (IS_ENABLED(STM32_LSE_ENABLED)) {
-		/* Enable the power interface clock */
-		LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_PWR);
-
 		stm32_backup_domain_enable_access();
 
 		/* Configure driving capability */

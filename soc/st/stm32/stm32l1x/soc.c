@@ -19,6 +19,8 @@
 
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
+
 /**
  * @brief Perform basic hardware initialization at boot.
  *
@@ -39,6 +41,7 @@ void soc_early_init_hook(void)
 	 * doesn't allow to configure Max frequency
 	 * switch to range1 to match any frequency
 	 */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }

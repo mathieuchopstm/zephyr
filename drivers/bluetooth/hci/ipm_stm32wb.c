@@ -16,6 +16,8 @@
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/irq.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include "app_conf.h"
 #include "stm32_wpan_common.h"
 #include "shci.h"
@@ -545,8 +547,10 @@ static int bt_ipm_open(const struct device *dev, bt_hci_recv_t recv)
 	if (!c2_started_flag) {
 		/* C2 has been teared down. Reinit required */
 		SHCI_C2_Reinit();
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR); //TODO: before C2_Reinit?
 		while (LL_PWR_IsActiveFlag_C2DS() == 0) {
 		};
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 		err = c2_reset();
 		if (err) {
@@ -599,8 +603,10 @@ static int bt_ipm_close(const struct device *dev)
 	}
 
 	/* Wait till C2DS set */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	while (LL_PWR_IsActiveFlag_C2DS() == 0) {
 	};
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	c2_started_flag = false;
 

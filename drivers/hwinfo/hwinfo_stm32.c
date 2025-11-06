@@ -6,6 +6,7 @@
 
 #include <soc.h>
 #include <stm32_bitops.h>
+#include <stm32_global_periph_clocks.h>
 #include <stm32_ll_utils.h>
 #include <stm32_ll_rcc.h>
 #if defined(CONFIG_SOC_SERIES_STM32H5X)
@@ -157,6 +158,8 @@ int z_impl_hwinfo_get_reset_cause(uint32_t *cause)
 	}
 #endif
 
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 #if defined(CONFIG_SOC_SERIES_STM32H7X) && defined(CORE_CM4)
 	if (LL_PWR_CPU2_IsActiveFlag_SB()) {
 		flags |= RESET_LOW_POWER_WAKE;
@@ -187,6 +190,8 @@ int z_impl_hwinfo_get_reset_cause(uint32_t *cause)
 	}
 #endif /* PWR_FLAG_SB */
 
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+
 	*cause = flags;
 
 	return 0;
@@ -195,6 +200,8 @@ int z_impl_hwinfo_get_reset_cause(uint32_t *cause)
 int z_impl_hwinfo_clear_reset_cause(void)
 {
 	LL_RCC_ClearResetFlags();
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 #if defined(CONFIG_SOC_SERIES_STM32H7X) && defined(CORE_CM4)
 	LL_PWR_ClearFlag_CPU2();
@@ -215,6 +222,8 @@ int z_impl_hwinfo_clear_reset_cause(void)
 #elif defined(PWR_FLAG_SB)
 	LL_PWR_ClearFlag_SB();
 #endif /* PWR_FLAG_SB */
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	return 0;
 }

@@ -17,6 +17,8 @@
 #include <clock_control/clock_stm32_ll_common.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
 
@@ -31,6 +33,8 @@ LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
 void pm_state_set(enum pm_state state, uint8_t substate_id)
 {
 	ARG_UNUSED(substate_id);
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	switch (state) {
 	case PM_STATE_SUSPEND_TO_IDLE:
@@ -65,6 +69,8 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		LOG_DBG("Unsupported power substate-id %u", state);
 		break;
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/*
 	 * System is now in active mode. Reenable interrupts which were

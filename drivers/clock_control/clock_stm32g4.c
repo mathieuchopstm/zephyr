@@ -16,6 +16,8 @@
 #include <zephyr/sys/time_units.h>
 #include "clock_stm32_ll_common.h"
 
+#include <stm32_global_periph_clocks.h>
+
 #if defined(STM32_PLL_ENABLED)
 
 /**
@@ -59,7 +61,9 @@ void config_pll_sysclock(void)
 {
 	/* set power boost mode for sys clock greater than 150MHz */
 	if (sys_clock_hw_cycles_per_sec() >= MHZ(150)) {
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		LL_PWR_EnableRange1BoostMode();
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 	}
 
 	LL_RCC_PLL_ConfigDomain_SYS(get_pll_source(),
@@ -77,6 +81,4 @@ void config_pll_sysclock(void)
  */
 void config_enable_default_clocks(void)
 {
-	/* Enable the power interface clock */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 }

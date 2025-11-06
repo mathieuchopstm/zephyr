@@ -11,6 +11,7 @@
 #include <zephyr/sys/printk.h>
 #include <stm32u5xx_ll_pwr.h>
 #include <gpio/gpio_stm32.h>
+#include <stm32_global_periph_clocks.h>
 
 #define SLEEP_TIME_MS   2000
 
@@ -36,6 +37,7 @@ int main(void)
 	 * This configuration is active only in STOP3 mode, so no need to disable it
 	 * during wake up
 	 */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR); //keep pwrc enabled forever
 	LL_PWR_EnablePUPDConfig();
 
 	while (true) {

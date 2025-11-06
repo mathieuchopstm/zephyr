@@ -7,6 +7,7 @@
 #include <stm32_ll_pwr.h>
 #include <zephyr/spinlock.h>
 #include <zephyr/logging/log.h>
+#include <stm32_global_periph_clocks.h>
 #include <stm32_backup_domain.h>
 #include <stddef.h>
 
@@ -30,9 +31,11 @@ void stm32_backup_domain_enable_access(void)
 	k_spinlock_key_t key = k_spin_lock(&lock);
 
 	if (refcount == 0U) {
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		ENABLE_BKUP_ACCESS();
 		while (!IS_ENABLED_BKUP_ACCESS()) {
 		}
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 	}
 	refcount++;
 
@@ -47,7 +50,9 @@ void stm32_backup_domain_disable_access(void)
 		LOG_WRN_ONCE("Unbalanced backup domain access refcount");
 	} else {
 		if (refcount == 1U) {
+			stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 			DISABLE_BKUP_ACCESS();
+			stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 		}
 		refcount--;
 	}

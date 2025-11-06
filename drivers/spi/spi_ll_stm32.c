@@ -472,11 +472,13 @@ static void spi_stm32_cs_control(const struct device *dev, bool on __maybe_unuse
 	const struct spi_stm32_config *cfg = dev->config;
 
 	if (cfg->use_subghzspi_nss) {
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		if (on) {
 			LL_PWR_SelectSUBGHZSPI_NSS();
 		} else {
 			LL_PWR_UnselectSUBGHZSPI_NSS();
 		}
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 	}
 #endif /* DT_HAS_COMPAT_STATUS_OKAY(st_stm32_spi_subghz) */
 }

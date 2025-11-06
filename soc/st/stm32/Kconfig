@@ -131,4 +131,31 @@ config STM32_APP_IN_EXT_FLASH
 	  in external Flash and is chainloaded with MCUboot.
 	  Whether the app is eXecuted in Place (XiP) depends on the MCUboot mode used.
 
+config STM32_GLOBAL_CLOCKS_ALWAYS_ON_MASK
+	def_int 0
+	help
+	  Bitmask of clocks that are always enabled and don't need to be
+	  managed by the framework. This is SoC-specific and only has an
+	  effect when CONFIG_STM32_GLOBAL_CLOCKS_RUNTIME_GATING=y
+
+	  Bit N corresponds to global peripheral with ID=N.
+	  Refer to "stm32_global_periph_clocks.h" for which IDs correspond
+	  to what peripheral.
+
+
+config STM32_GLOBAL_CLOCKS_RUNTIME_GATING
+	bool "Enable runtime clock gating for global clocks"
+	default y
+	help
+	  When enabled, usage of clocks for global/system peripherals is
+	  reference-counted to ensure peripherals such as PWR or SYSCFG
+	  are only clocked when used which reduces the power consumption.
+	  This slightly increases the application footprint, and also makes
+	  certain operations slightly slower.
+
+	  When disabled, clocks for global/system peripherals are turned on
+	  during boot and remain active for the application lifetime, which
+	  increases power consumption but slightly decreases footprint and
+	  avoids runtime overhead.
+
 endif # SOC_FAMILY_STM32

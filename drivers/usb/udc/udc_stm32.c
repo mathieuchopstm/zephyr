@@ -21,6 +21,8 @@
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/sys/util.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include "udc_common.h"
 
 #include <zephyr/logging/log.h>
@@ -1257,6 +1259,7 @@ static int priv_clock_enable(void)
 	}
 
 	/* Power configuration */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #if defined(CONFIG_SOC_SERIES_STM32H7X)
 	LL_PWR_EnableUSBVoltageDetector();
 
@@ -1325,6 +1328,7 @@ static int priv_clock_enable(void)
 	 */
 	LL_PWR_EnableVDDUSB();
 #endif
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	if (DT_INST_NUM_CLOCKS(0) > 1) {
 		if (clock_control_configure(clk, &pclken[1], NULL) != 0) {
@@ -1388,7 +1392,7 @@ static int priv_clock_enable(void)
 	const uint32_t hsphy_clknum = DT_NUM_CLOCKS(DT_NODELABEL(otghs_phy));
 
 	/* Configure OTG PHY reference clock through SYSCFG */
-	__HAL_RCC_SYSCFG_CLK_ENABLE();
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 
 	HAL_SYSCFG_SetOTGPHYReferenceClockSelection(
 		syscfg_otg_hs_phy_clk[DT_ENUM_IDX(DT_NODELABEL(otghs_phy), clock_reference)]
@@ -1396,6 +1400,8 @@ static int priv_clock_enable(void)
 
 	/* De-assert reset and enable clock of OTG PHY */
 	HAL_SYSCFG_EnableOTGPHY(SYSCFG_OTG_HS_PHY_ENABLE);
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 
 	if (hsphy_clknum > 1) {
 		if (clock_control_configure(clk, (void *)&hsphy_clk[1], NULL) != 0) {
@@ -1572,12 +1578,9 @@ static int udc_stm32_driver_init0(const struct device *dev)
 	 * Remap IRQ by default to enable use of both IPs simultaneoulsy
 	 * This should be done before calling any HAL function
 	 */
-	if (LL_APB2_GRP1_IsEnabledClock(LL_APB2_GRP1_PERIPH_SYSCFG)) {
-		LL_SYSCFG_EnableRemapIT_USB();
-	} else {
-		LOG_ERR("System Configuration Controller clock is "
-			"disabled. Unable to enable IRQ remapping.");
-	}
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
+	LL_SYSCFG_EnableRemapIT_USB();
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 #endif
 
 #if UDC_STM32_NODE_PHY_ITFACE(DT_DRV_INST(0)) == PCD_PHY_ULPI
@@ -1600,17 +1603,9 @@ static int udc_stm32_driver_init0(const struct device *dev)
 	 * DM00310109.
 	 */
 #ifdef PWR_CR2_USV
-#if defined(LL_APB1_GRP1_PERIPH_PWR)
-	if (LL_APB1_GRP1_IsEnabledClock(LL_APB1_GRP1_PERIPH_PWR)) {
-		LL_PWR_EnableVddUSB();
-	} else {
-		LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-		LL_PWR_EnableVddUSB();
-		LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_PWR);
-	}
-	#else
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_EnableVddUSB();
-#endif /* defined(LL_APB1_GRP1_PERIPH_PWR) */
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif /* PWR_CR2_USV */
 
 	return 0;

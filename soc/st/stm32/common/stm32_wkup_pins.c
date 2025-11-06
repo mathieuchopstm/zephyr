@@ -16,6 +16,8 @@
 #include <stm32_ll_system.h>
 #include <stm32_ll_pwr.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <zephyr/dt-bindings/power/stm32_pwr.h>
 
 #include "stm32_wkup_pins.h"
@@ -195,6 +197,8 @@ static void wkup_pin_setup(const struct wkup_pin_cfg_t *wakeup_pin_cfg)
 {
 	uint32_t wkup_pin_index = wakeup_pin_cfg->wkup_pin_id;
 
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 #if PWR_STM32_WKUP_PINS_POLARITY
 	/* Set wake-up pin polarity */
 	if (wakeup_pin_cfg->polarity == STM32_PWR_WKUP_PIN_P_FALLING) {
@@ -237,6 +241,8 @@ static void wkup_pin_setup(const struct wkup_pin_cfg_t *wakeup_pin_cfg)
 #endif /* CONFIG_SOC_SERIES_STM32U5X or CONFIG_SOC_SERIES_STM32WBAX */
 
 	LL_PWR_EnableWakeUpPin(table_wakeup_pins[wkup_pin_index]);
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }
 
 /**
@@ -338,11 +344,13 @@ int stm32_pwr_wkup_pin_cfg_gpio(const struct gpio_dt_spec *gpio)
 void stm32_pwr_wkup_pin_cfg_pupd(void)
 {
 #if PWR_STM32_WKUP_PINS_PUPD_CFG
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #ifdef CONFIG_SOC_SERIES_STM32U5X
 	LL_PWR_EnablePUPDConfig();
 #else
 	LL_PWR_EnablePUPDCfg();
 #endif /* CONFIG_SOC_SERIES_STM32U5X */
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #else
 	return;
 #endif /* PWR_STM32_WKUP_PINS_PUPD_CFG */

@@ -7,6 +7,7 @@
 
 #include <clock_control/clock_stm32_ll_common.h>
 #include <soc.h>
+#include <stm32_global_periph_clocks.h>
 
 #include <stm32c0xx_ll_cortex.h>
 #include <stm32c0xx_ll_pwr.h>
@@ -23,6 +24,9 @@ BUILD_ASSERT(DT_SAME_NODE(DT_CHOSEN(zephyr_cortex_m_idle_timer), DT_NODELABEL(rt
 void pm_state_set(enum pm_state state, uint8_t substate_id)
 {
 	ARG_UNUSED(substate_id);
+
+	/* Enable PWRC during entire PM cycle */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	switch (state) {
 	case PM_STATE_SUSPEND_TO_IDLE:
@@ -57,6 +61,9 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		LOG_WRN("Unsupported power substate-id %u", state);
 		break;
 	}
+
+	/* Release PWRC at end of PM cycle */
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/*
 	 * System is now in active mode. Reenable interrupts which were

@@ -13,6 +13,7 @@
 #include <zephyr/device.h>
 #include <soc.h>
 #include <stm32_bitops.h>
+#include <stm32_global_periph_clocks.h>
 #include <stm32_ll_bus.h>
 #include <stm32_ll_exti.h>
 #include <stm32_ll_gpio.h>
@@ -180,6 +181,7 @@ static inline void ll_gpio_set_pin_pull(GPIO_TypeDef *GPIOx, uint32_t Pin, uint3
 #if defined(CONFIG_SOC_SERIES_STM32WB0X)
 	/* On STM32WB0, the PWRC PU/PD control registers should be used instead
 	 * of the GPIO controller registers, so we cannot use LL_GPIO_SetPinPull.
+	 * N.B.: PWRC clock is always-on so clock enablement helpers aren't used.
 	 */
 	const uint32_t gpio = (GPIOx == GPIOA) ? LL_PWR_GPIO_A : LL_PWR_GPIO_B;
 
@@ -203,6 +205,7 @@ __maybe_unused static inline uint32_t ll_gpio_get_pin_pull(GPIO_TypeDef *GPIOx, 
 #if defined(CONFIG_SOC_SERIES_STM32WB0X)
 	/* On STM32WB0, the PWRC PU/PD control registers should be used instead
 	 * of the GPIO controller registers, so we cannot use LL_GPIO_GetPinPull.
+	 * N.B.: PWRC clock is always-on so clock enablement helpers aren't used.
 	 */
 	const uint32_t gpio = (GPIOx == GPIOA) ? LL_PWR_GPIO_A : LL_PWR_GPIO_B;
 
@@ -725,11 +728,14 @@ __maybe_unused static int gpio_stm32_init(const struct device *dev)
 	z_stm32_hsem_lock(CFG_HW_RCC_SEMID, HSEM_LOCK_DEFAULT_RETRY);
 	/* Port G[15:2] requires external power supply */
 	/* Cf: L4/L5/U3 RM, Chapter "Independent I/O supply rail" */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #ifdef CONFIG_SOC_SERIES_STM32U3X
 	LL_PWR_EnableVDDIO2();
 #else
 	LL_PWR_EnableVddIO2();
+
 #endif
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 	z_stm32_hsem_unlock(CFG_HW_RCC_SEMID);
 #endif
 

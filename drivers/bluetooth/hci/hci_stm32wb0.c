@@ -320,12 +320,16 @@ static int ble_pm_action(const struct device *dev,
 
 	switch (action) {
 	case PM_DEVICE_ACTION_SUSPEND:
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		LL_PWR_EnableWU_EWBLE();
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 		pka_cr_vr = PKA->CR;
 		/* TBD: Manage PKA save for WB06 & WB07 */
 		break;
 	case PM_DEVICE_ACTION_RESUME:
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		LL_PWR_DisableWU_EWBLE();
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 		/* TBD: Manage PKA restore for WB06 & WB07 */
 		PKA->CLRFR = PKA_CLRFR_PROCENDFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_ADDRERRFC;
 		PKA->CR = pka_cr_vr;

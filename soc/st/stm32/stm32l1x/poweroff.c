@@ -10,8 +10,11 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/poweroff.h>
 
+#include <stm32_global_periph_clocks.h>
+
 void z_sys_poweroff(void)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_ClearFlag_SB();
 	LL_PWR_ClearFlag_WU();
 

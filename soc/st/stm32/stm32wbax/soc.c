@@ -21,6 +21,8 @@
 #include "soc.h"
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #define LOG_LEVEL CONFIG_SOC_LOG_LEVEL
 LOG_MODULE_REGISTER(soc);
 
@@ -40,14 +42,15 @@ void stm32wba_init(void)
 	/* At reset, system core clock is set to 16 MHz from HSI */
 	SystemCoreClock = 16000000;
 
-	/* Enable PWR */
-	LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_PWR);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 #if defined(CONFIG_POWER_SUPPLY_DIRECT_SMPS)
 	LL_PWR_SetRegulatorSupply(LL_PWR_SMPS_SUPPLY);
 #elif defined(CONFIG_POWER_SUPPLY_LDO)
 	LL_PWR_SetRegulatorSupply(LL_PWR_LDO_SUPPLY);
 #endif
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }
 
 void soc_early_init_hook(void)

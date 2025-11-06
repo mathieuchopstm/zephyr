@@ -16,6 +16,8 @@
 #include <stm32_ll_pwr.h>
 #include <zephyr/logging/log.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <cmsis_core.h>
 
 #define LOG_LEVEL CONFIG_SOC_LOG_LEVEL
@@ -39,7 +41,9 @@ void soc_early_init_hook(void)
 	if (IS_ENABLED(CONFIG_DT_HAS_ST_STM32_UCPD_ENABLED) ||
 		!IS_ENABLED(CONFIG_USB_DEVICE_DRIVER)) {
 		/* Disable USB Type-C dead battery pull-down behavior */
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		LL_PWR_DisableUCPDDeadBattery();
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 	}
 
 #endif /* PWR_UCPDR_UCPD_DBDIS */
