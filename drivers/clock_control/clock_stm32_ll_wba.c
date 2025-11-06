@@ -14,6 +14,7 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
+#include <stm32_global_periph_clocks.h>
 #include <stm32_backup_domain.h>
 #include <stm32_hsem.h>
 
@@ -345,6 +346,7 @@ static int get_vco_input_range(uint32_t m_div, uint32_t *range)
 
 static void set_regu_voltage(uint32_t hclk_freq)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	if (hclk_freq <= MHZ(16)) {
 		LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE2);
 	} else {
@@ -352,6 +354,7 @@ static void set_regu_voltage(uint32_t hclk_freq)
 	}
 	while (LL_PWR_IsActiveFlag_VOS() == 0) {
 	}
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }
 
 /*

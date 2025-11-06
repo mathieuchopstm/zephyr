@@ -10,11 +10,14 @@
 #include <zephyr/toolchain.h>
 #include <zephyr/drivers/misc/stm32_wkup_pins/stm32_wkup_pins.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <stm32_ll_cortex.h>
 #include <stm32_ll_pwr.h>
 
 void z_sys_poweroff(void)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #ifdef CONFIG_STM32_WKUP_PINS
 	stm32_pwr_wkup_pin_cfg_pupd();
 #endif /* CONFIG_STM32_WKUP_PINS */

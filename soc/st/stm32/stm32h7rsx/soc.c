@@ -20,6 +20,7 @@
 
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
 
 /**
  * @brief Perform basic hardware initialization at boot.
@@ -36,6 +37,7 @@ void soc_early_init_hook(void)
 	SystemCoreClock = 64000000;
 
 	/* Power Configuration */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #if defined(CONFIG_POWER_SUPPLY_DIRECT_SMPS)
 	LL_PWR_ConfigSupply(LL_PWR_DIRECT_SMPS_SUPPLY);
 #elif defined(CONFIG_POWER_SUPPLY_SMPS_1V8_SUPPLIES_LDO)
@@ -68,4 +70,5 @@ void soc_early_init_hook(void)
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(gpiom), okay)
 	LL_PWR_EnableUSBVoltageDetector(); /* Required for powering GPIO M */
 #endif /* gpiom */
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }

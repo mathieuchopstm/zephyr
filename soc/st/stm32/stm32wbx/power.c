@@ -15,6 +15,7 @@
 #include <stm32wbxx_ll_pwr.h>
 #include <stm32wbxx_ll_rcc.h>
 #include <clock_control/clock_stm32_ll_common.h>
+#include <stm32_global_periph_clocks.h>
 #include "stm32_hsem.h"
 
 #include <zephyr/logging/log.h>
@@ -59,6 +60,8 @@ static void lpm_hsem_lock(void)
 /* Invoke Low Power/System Off specific Tasks */
 void pm_state_set(enum pm_state state, uint8_t substate_id)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	if (state == PM_STATE_SUSPEND_TO_IDLE) {
 
 		lpm_hsem_lock();
@@ -141,6 +144,8 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 
 	/* Release RCC semaphore */
 	z_stm32_hsem_unlock(CFG_HW_RCC_SEMID);
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/*
 	 * System is now in active mode.

@@ -17,6 +17,8 @@
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include "clock_stm32_ll_common.h"
 
+#include <stm32_global_periph_clocks.h>
+
 #if defined(STM32_PLL_ENABLED)
 
 /**
@@ -124,6 +126,7 @@ void config_pll_sysclock(void)
 		 */
 		LL_RCC_PLL_Enable();
 
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 		/* Set Overdrive if needed before configuring the Flash Latency */
 		LL_PWR_EnableOverDriveMode();
 		while (LL_PWR_IsActiveFlag_OD() != 1) {
@@ -133,6 +136,7 @@ void config_pll_sysclock(void)
 		while (LL_PWR_IsActiveFlag_ODSW() != 1) {
 			/* Wait for OverDrive switch ready */
 		}
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 		/* The PLL could still not be locked when returning to the caller
 		 * function. But the caller doesn't know we've turned on the PLL
@@ -264,6 +268,4 @@ void config_pllsai(void)
  */
 void config_enable_default_clocks(void)
 {
-	/* Power Interface clock enabled by default */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 }

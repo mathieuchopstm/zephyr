@@ -19,6 +19,8 @@
 #include <stm32_ll_pwr.h>
 #include <stm32_ll_rcc.h>
 #include <stm32_ll_system.h>
+
+#include <stm32_global_periph_clocks.h>
 #include "stm32_hsem.h"
 
 #include <cmsis_core.h>
@@ -46,7 +48,7 @@ static int stm32h7_m4_wakeup(void)
 
 	/* HW semaphore and SysCfg Clock enable */
 	LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_HSEM);
-	LL_APB4_GRP1_EnableClock(LL_APB4_GRP1_PERIPH_SYSCFG);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 
 	if (stm32_reg_read_bits(&SYSCFG->UR1, SYSCFG_UR1_BCM4) != 0) {
 		/**
@@ -62,6 +64,8 @@ static int stm32h7_m4_wakeup(void)
 		/* CM4 is not started at boot, start it now */
 		LL_RCC_ForceCM4Boot();
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 
 	return 0;
 }
@@ -122,6 +126,8 @@ void soc_early_init_hook(void)
 		defined(CONFIG_POWER_SUPPLY_SMPS_2V5_SUPPLIES_EXT))
 #error Unsupported configuration: Selected SoC do not support SMPS
 #endif
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #if defined(CONFIG_POWER_SUPPLY_DIRECT_SMPS)
 	LL_PWR_ConfigSupply(LL_PWR_DIRECT_SMPS_SUPPLY);
 #elif defined(CONFIG_POWER_SUPPLY_SMPS_1V8_SUPPLIES_LDO)
@@ -141,6 +147,7 @@ void soc_early_init_hook(void)
 #else
 	LL_PWR_ConfigSupply(LL_PWR_LDO_SUPPLY);
 #endif
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/* Errata ES0392 Rev 8:
 	 * 2.2.9: Reading from AXI SRAM may lead to data read corruption

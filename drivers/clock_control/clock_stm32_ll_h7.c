@@ -16,6 +16,7 @@
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
+#include <stm32_global_periph_clocks.h>
 #include <stm32_backup_domain.h>
 #include <stm32_hsem.h>
 
@@ -1025,6 +1026,9 @@ int stm32_clock_control_init(const struct device *dev)
 {
 	int r = 0;
 
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
+
 #if defined(CONFIG_CPU_CORTEX_M7)
 	uint32_t old_hclk_freq;
 	uint32_t new_hclk_freq;
@@ -1141,6 +1145,8 @@ int stm32_clock_control_init(const struct device *dev)
 	} else {
 		LL_RCC_SetTIMPrescaler(LL_RCC_TIM_PRESCALER_TWICE);
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	ARG_UNUSED(dev);
 

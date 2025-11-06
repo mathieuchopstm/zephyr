@@ -169,7 +169,6 @@ void config_enable_default_clocks(void)
 {
 	if (IS_ENABLED(STM32_LSE_ENABLED)) {
 		/* Set the PWREN and BKPEN bits in the RCC_APB1ENR register */
-		LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 		LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_BKP);
 	}
 }

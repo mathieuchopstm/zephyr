@@ -13,6 +13,8 @@
 #include <zephyr/pm/device_runtime.h>
 #include <gpio/gpio_stm32.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <stm32_ll_bus.h>
 #include <stm32_ll_gpio.h>
 #include <stm32_ll_system.h>
@@ -101,13 +103,14 @@ int stm32_pinmux_init_remap(void)
 #error "Pin remap property available only on STM32G0 and STM32C0 SoC series"
 #endif
 
-	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 #if REMAP_PA11
 	LL_SYSCFG_EnablePinRemap(LL_SYSCFG_PIN_RMP_PA11);
 #endif
 #if REMAP_PA12
 	LL_SYSCFG_EnablePinRemap(LL_SYSCFG_PIN_RMP_PA12);
 #endif
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 
 #elif REMAP_PA11_PA12
 
@@ -115,8 +118,9 @@ int stm32_pinmux_init_remap(void)
 #error "Pin remap property available only on STM32F070x SoC series"
 #endif
 
-	LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 	LL_SYSCFG_EnablePinRemap();
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 
 #endif /* (REMAP_PA11 || REMAP_PA12) || REMAP_PA11_PA12 */
 

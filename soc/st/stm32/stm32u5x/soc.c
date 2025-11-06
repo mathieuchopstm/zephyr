@@ -18,6 +18,8 @@
 
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #define LOG_LEVEL CONFIG_SOC_LOG_LEVEL
 LOG_MODULE_REGISTER(soc);
 
@@ -36,7 +38,7 @@ void soc_early_init_hook(void)
 	SystemCoreClock = 4000000;
 
 	/* Enable PWR */
-	LL_AHB3_GRP1_EnableClock(LL_AHB3_GRP1_PERIPH_PWR);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	/* For devices with USB C PD, we can disable the dead battery
 	 * pull-down behaviour.
@@ -61,4 +63,5 @@ void soc_early_init_hook(void)
 #if CONFIG_PM
 	stm32_power_init();
 #endif
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }

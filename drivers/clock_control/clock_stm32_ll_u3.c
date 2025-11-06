@@ -15,6 +15,7 @@
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include <zephyr/sys/util.h>
 #include <stm32_backup_domain.h>
+#include <stm32_global_periph_clocks.h>
 
 /* Macros to fill up prescaler values */
 #define ahb_prescaler(v) CONCAT(LL_RCC_HCLK_SYSCLK_DIV_, v)
@@ -575,6 +576,8 @@ int stm32_clock_control_init(const struct device *dev)
 
 	ARG_UNUSED(dev);
 
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	/* Current hclk value */
 	old_hclk_freq = __LL_RCC_CALC_HCLK_FREQ(get_startup_frequency(), LL_RCC_GetAHBPrescaler());
 
@@ -620,6 +623,8 @@ int stm32_clock_control_init(const struct device *dev)
 	if (old_hclk_freq >= CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC) {
 		LL_SetFlashLatency(CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC);
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/* Update CMSIS variable */
 	SystemCoreClock = CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC;

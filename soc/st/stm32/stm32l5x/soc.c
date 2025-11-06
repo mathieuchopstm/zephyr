@@ -18,6 +18,8 @@
 
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #define LOG_LEVEL CONFIG_SOC_LOG_LEVEL
 LOG_MODULE_REGISTER(soc);
 
@@ -36,7 +38,7 @@ void soc_early_init_hook(void)
 	SystemCoreClock = 4000000;
 
 	/* Enable Scale 0 to achieve 110MHz */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE0);
 
 	if (IS_ENABLED(CONFIG_DT_HAS_ST_STM32_UCPD_ENABLED) ||
@@ -44,6 +46,8 @@ void soc_early_init_hook(void)
 		/* Disable USB Type-C dead battery pull-down behavior */
 		LL_PWR_DisableUCPDDeadBattery();
 	}
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+
 #if CONFIG_PM
 	stm32_power_init();
 #endif

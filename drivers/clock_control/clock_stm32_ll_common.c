@@ -17,6 +17,7 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/sys/__assert.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
+#include <stm32_global_periph_clocks.h>
 #include <stm32_backup_domain.h>
 #include <stm32_hsem.h>
 
@@ -1027,8 +1028,9 @@ static void set_up_fixed_clock_sources(void)
 		 * HSI48 requires VREFINT (see RM0376 section 7.2.4).
 		 * The SYSCFG is needed to control VREFINT, so clock it.
 		 */
-		LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 		LL_SYSCFG_VREFINT_EnableHSI48();
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 #endif /* CONFIG_SOC_SERIES_STM32L0X */
 
 		/*

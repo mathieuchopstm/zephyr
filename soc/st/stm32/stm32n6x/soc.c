@@ -20,6 +20,8 @@
 
 #include <cmsis_core.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #define LOG_LEVEL CONFIG_SOC_LOG_LEVEL
 LOG_MODULE_REGISTER(soc);
 
@@ -51,8 +53,7 @@ void soc_early_init_hook(void)
 	/* At reset, system core clock is set to 64 MHz from HSI */
 	SystemCoreClock = 64000000;
 
-	/* Enable PWR */
-	LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_PWR);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	/* Set the main internal Regulator output voltage for best performance */
 	LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE0);
@@ -66,4 +67,6 @@ void soc_early_init_hook(void)
 	/* Set Vdd IO2 and IO3 to 1.8V */
 	LL_PWR_SetVddIO2VoltageRange(LL_PWR_VDDIO_VOLTAGE_RANGE_1V8);
 	LL_PWR_SetVddIO3VoltageRange(LL_PWR_VDDIO_VOLTAGE_RANGE_1V8);
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }

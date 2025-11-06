@@ -25,7 +25,10 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/pinctrl.h>
+
+#include <stm32_global_periph_clocks.h>
 #include "stm32_hsem.h"
+
 
 #define LOG_LEVEL CONFIG_USB_DRIVER_LOG_LEVEL
 #include <zephyr/logging/log.h>
@@ -301,12 +304,7 @@ static int usb_dc_stm32_phy_specific_clock_enable(const struct device *const clk
 {
 	int err;
 
-	/* Sequence to enable the power of the OTG HS on a stm32U5 serie : Enable VDDUSB */
-	bool pwr_clk = LL_AHB3_GRP1_IsEnabledClock(LL_AHB3_GRP1_PERIPH_PWR);
-
-	if (!pwr_clk) {
-		LL_AHB3_GRP1_EnableClock(LL_AHB3_GRP1_PERIPH_PWR);
-	}
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	/* Check that power range is 1 or 2 */
 	if (LL_PWR_GetRegulVoltageScaling() < LL_PWR_REGU_VOLTAGE_SCALE2) {
@@ -323,12 +321,10 @@ static int usb_dc_stm32_phy_specific_clock_enable(const struct device *const clk
 	}
 
 	/* Leave the PWR clock in its initial position */
-	if (!pwr_clk) {
-		LL_AHB3_GRP1_DisableClock(LL_AHB3_GRP1_PERIPH_PWR);
-	}
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	/* Set the OTG PHY reference clock selection (through SYSCFG) block */
-	LL_APB3_GRP1_EnableClock(LL_APB3_GRP1_PERIPH_SYSCFG);
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
 
 	err = usb_dc_stm32u5_phy_clock_enable(clk);
 	if (err) {
@@ -337,6 +333,8 @@ static int usb_dc_stm32_phy_specific_clock_enable(const struct device *const clk
 
 	/* Configuring the SYSCFG registers OTG_HS PHY : OTG_HS PHY enable*/
 	HAL_SYSCFG_EnableOTGPHY(SYSCFG_OTG_HS_PHY_ENABLE);
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 
 	if (clock_control_on(clk, (clock_control_subsys_t)&pclken[0]) != 0) {
 		LOG_ERR("Unable to enable USB clock");
@@ -350,6 +348,7 @@ static int usb_dc_stm32_phy_specific_clock_enable(const struct device *const clk
 
 static int usb_dc_stm32_phy_specific_clock_enable(const struct device *const clk)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 #if defined(PWR_USBSCR_USB33SV) || defined(PWR_SVMCR_USV)
 	/*
 	 * VDDUSB independent USB supply (PWR clock is on)
@@ -365,6 +364,7 @@ static int usb_dc_stm32_phy_specific_clock_enable(const struct device *const clk
 	/* Enable VDDUSB */
 	LL_PWR_EnableVddUSB();
 #endif
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	if (DT_INST_NUM_CLOCKS(0) > 1) {
 		if (clock_control_configure(clk, (clock_control_subsys_t)&pclken[1],
@@ -532,6 +532,7 @@ static int usb_dc_stm32_init(void)
 	LL_AHB1_GRP1_DisableClockSleep(LL_AHB1_GRP1_PERIPH_USB2OTGHSULPI);
 #endif
 
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_EnableUSBVoltageDetector();
 
 	/* Per AN2606: USBREGEN not supported when running in FS mode. */
@@ -540,6 +541,7 @@ static int usb_dc_stm32_init(void)
 		LOG_INF("PWR not active yet");
 		k_sleep(K_MSEC(100));
 	}
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif
 
 #if !DT_HAS_COMPAT_STATUS_OKAY(st_stm32n6_otghs)
@@ -624,12 +626,9 @@ int usb_dc_attach(void)
 	 * Remap IRQ by default to enable use of both IPs simultaneoulsy
 	 * This should be done before calling any HAL function
 	 */
-	if (LL_APB2_GRP1_IsEnabledClock(LL_APB2_GRP1_PERIPH_SYSCFG)) {
-		LL_SYSCFG_EnableRemapIT_USB();
-	} else {
-		LOG_ERR("System Configuration Controller clock is "
-			"disabled. Unable to enable IRQ remapping.");
-	}
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_SYSCFG);
+	LL_SYSCFG_EnableRemapIT_USB();
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 #endif
 
 #if USB_OTG_HS_ULPI_PHY
@@ -662,17 +661,9 @@ int usb_dc_attach(void)
 	 * DM00310109.
 	 */
 #ifdef PWR_CR2_USV
-#if defined(LL_APB1_GRP1_PERIPH_PWR)
-	if (LL_APB1_GRP1_IsEnabledClock(LL_APB1_GRP1_PERIPH_PWR)) {
-		LL_PWR_EnableVddUSB();
-	} else {
-		LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-		LL_PWR_EnableVddUSB();
-		LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_PWR);
-	}
-#else
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_EnableVddUSB();
-#endif /* defined(LL_APB1_GRP1_PERIPH_PWR) */
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif /* PWR_CR2_USV */
 
 	return 0;

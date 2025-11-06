@@ -19,6 +19,8 @@ LOG_MODULE_REGISTER(LOG_DOMAIN);
 #include <stm32_bitops.h>
 #include <stm32_ll_system.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include "flash_stm32.h"
 
 #define STM32G4_SERIES_MAX_FLASH	512
@@ -167,8 +169,11 @@ static int erase_page(const struct device *dev, unsigned int offset)
 
 #if defined(FLASH_STM32_DBANK)
 	bool bank_swap;
+
 	/* Check whether bank1/2 are swapped */
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 	bank_swap = (LL_SYSCFG_GetFlashBankMode() == LL_SYSCFG_BANKMODE_BANK2);
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_SYSCFG);
 
 	if ((offset < (FLASH_SIZE / 2)) && !bank_swap) {
 		/* The pages to be erased is in bank 1 */

@@ -5,6 +5,7 @@ zephyr_include_directories(.)
 zephyr_sources(
 	stm32cube_hal.c
 	soc_config.c
+  stm32_global_periph_clocks.c
 )
 
 if(DEFINED CONFIG_STM32_CCM)

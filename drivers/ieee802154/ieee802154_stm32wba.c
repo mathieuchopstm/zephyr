@@ -38,6 +38,8 @@
 #include "ieee802154_stm32wba.h"
 #include <stm32wba_802154_intf.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #define DT_DRV_COMPAT st_stm32wba_ieee802154
 
 #define LOG_MODULE_NAME ieee802154_stm32wba
@@ -992,6 +994,8 @@ static int radio_pm_action(const struct device *dev, enum pm_device_action actio
 	case PM_DEVICE_ACTION_RESUME:
 		LL_AHB5_GRP1_EnableClock(LL_AHB5_GRP1_PERIPH_RADIO);
 #if defined(CONFIG_PM_S2RAM)
+		stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 		if (LL_PWR_IsActiveFlag_SB() == 1U) {
 			/* Put the radio in active state */
 			LL_AHB5_GRP1_EnableClock(LL_AHB5_GRP1_PERIPH_RADIO);
@@ -999,6 +1003,8 @@ static int radio_pm_action(const struct device *dev, enum pm_device_action actio
 		}
 		LINKLAYER_PLAT_NotifyWFIExit();
 		ll_sys_dp_slp_exit();
+
+		stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif
 		break;
 	case PM_DEVICE_ACTION_SUSPEND:

@@ -47,6 +47,7 @@
 
 #include <soc.h>
 #include <stm32_bitops.h>
+#include <stm32_global_periph_clocks.h>
 #include <stm32_ll_adc.h>
 #include <stm32_ll_utils.h>
 
@@ -1101,8 +1102,10 @@ int adc_stm32wb0_init(const struct device *dev)
 #endif
 
 #if defined(PWR_CR2_ENTS)
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	/* Enable on-die temperature sensor */
 	LL_PWR_EnableTempSens();
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 #endif
 
 	/* Set ADC sample rate to 1 Msps (maximum speed) */

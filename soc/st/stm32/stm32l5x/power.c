@@ -17,6 +17,8 @@
 #include <clock_control/clock_stm32_ll_common.h>
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
 
@@ -34,6 +36,8 @@ void pm_state_set(enum pm_state state, uint8_t substate_id)
 		LOG_DBG("Unsupported power state %u", state);
 		return;
 	}
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 
 	/* ensure the proper wake-up system clock */
 	LL_RCC_SetClkAfterWakeFromStop(RCC_STOP_WAKEUPCLOCK_SELECTED);
@@ -89,6 +93,8 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		stm32_clock_control_init(NULL);
 	}
 
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+
 	/*
 	 * System is now in active mode.
 	 * Reenable interrupts which were disabled
@@ -100,7 +106,4 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 /* Initialize STM32 Power */
 void stm32_power_init(void)
 {
-
-	/* enable Power clock */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 }

@@ -13,6 +13,7 @@
 #include <stm32_ll_pwr.h>
 
 #include <stm32_backup_domain.h>
+#include <stm32_global_periph_clocks.h>
 
 LOG_MODULE_REGISTER(stm32_backup_sram, CONFIG_SOC_LOG_LEVEL);
 
@@ -46,9 +47,11 @@ static int stm32_backup_sram_init(const struct device *dev)
 	/* enable backup sram regulator (required to retain backup SRAM content
 	 * while in standby or VBAT modes).
 	 */
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
 	LL_PWR_EnableBkUpRegulator();
 	while (!LL_PWR_IsEnabledBkUpRegulator()) {
 	}
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 
 	return 0;
 }

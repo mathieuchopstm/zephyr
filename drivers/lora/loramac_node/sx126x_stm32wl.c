@@ -12,6 +12,8 @@
 #include <stm32wlxx_ll_pwr.h>
 #include <stm32wlxx_ll_rcc.h>
 
+#include <stm32_global_periph_clocks.h>
+
 #include <zephyr/logging/log.h>
 #include <zephyr/irq.h>
 LOG_MODULE_DECLARE(sx126x, CONFIG_LORA_LOG_LEVEL);
@@ -31,7 +33,13 @@ void sx126x_reset(struct sx126x_data *dev_data)
 
 bool sx126x_is_busy(struct sx126x_data *dev_data)
 {
-	return LL_PWR_IsActiveFlag_RFBUSYS();
+	bool busy;
+
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+	busy = LL_PWR_IsActiveFlag_RFBUSYS();
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
+
+	return busy;
 }
 
 uint32_t sx126x_get_dio1_pin_state(struct sx126x_data *dev_data)

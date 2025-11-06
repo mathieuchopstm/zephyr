@@ -16,6 +16,8 @@
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 #include "clock_stm32_ll_common.h"
 
+#include <stm32_global_periph_clocks.h>
+
 #if defined(STM32_PLL_ENABLED)
 
 /* Macros to fill up multiplication and division factors values */
@@ -91,6 +93,8 @@ uint32_t get_pllout_frequency(void)
  */
 void config_regulator_voltage(uint32_t hclk_freq)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	if (hclk_freq <= MHZ(4.2)) {
 		LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE3);
 	} else if (hclk_freq <= MHZ(16)) {
@@ -100,6 +104,8 @@ void config_regulator_voltage(uint32_t hclk_freq)
 	}
 	while (LL_PWR_IsActiveFlag_VOS() == 1) {
 	}
+
+	stm32_global_periph_release(STM32_GLOBAL_PERIPH_PWR);
 }
 
 /**
@@ -107,11 +113,4 @@ void config_regulator_voltage(uint32_t hclk_freq)
  */
 void config_enable_default_clocks(void)
 {
-#if defined(CONFIG_EXTI_STM32) || defined(CONFIG_USB_DC_STM32) || \
-	(defined(CONFIG_SOC_SERIES_STM32L0X) &&			  \
-	 defined(CONFIG_ENTROPY_STM32_RNG))
-	/* Enable System Configuration Controller clock. */
-	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
-#endif
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 }

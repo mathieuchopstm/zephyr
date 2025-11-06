@@ -14,8 +14,12 @@
 #include <stm32_ll_cortex.h>
 #include <stm32_ll_pwr.h>
 
+#include <stm32_global_periph_clocks.h>
+
 void z_sys_poweroff(void)
 {
+	stm32_global_periph_refer(STM32_GLOBAL_PERIPH_PWR);
+
 	LL_PWR_ClearFlag_WU();
 
 	LL_PWR_SetPowerMode(LL_PWR_MODE_STANDBY);
