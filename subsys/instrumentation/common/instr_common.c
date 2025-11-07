@@ -179,6 +179,9 @@ bool instr_initialized(void)
 __no_instrumentation__
 bool instr_fundamentals_initialized(void)
 {
+       extern bool z_sys_post_kernel;
+       return z_sys_post_kernel;
+
 	if (magic == 0xABBA) {
 		return true;
 	} else {
