@@ -91,6 +91,7 @@ void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 		if (stream->state != I2S_STATE_READY) {
 			stream->state = I2S_STATE_ERROR;
 			LOG_ERR("RX mem_block NULL");
+			__HAL_SAI_DISABLE(hsai);
 			goto exit;
 		} else {
 			return;
@@ -102,18 +103,21 @@ void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 	ret = k_msgq_put(&stream->queue, &item, K_NO_WAIT);
 	if (ret < 0) {
 		stream->state = I2S_STATE_ERROR;
+		__HAL_SAI_DISABLE(hsai);
 		goto exit;
 	}
 
 	if (stream->state == I2S_STATE_STOPPING) {
 		stream->state = I2S_STATE_READY;
 		LOG_DBG("Stopping RX ...");
+		__HAL_SAI_DISABLE(hsai);
 		goto exit;
 	}
 
 	ret = k_mem_slab_alloc(stream->i2s_cfg.mem_slab, &stream->mem_block, K_NO_WAIT);
 	if (ret < 0) {
 		stream->state = I2S_STATE_ERROR;
+		__HAL_SAI_DISABLE(hsai);
 		goto exit;
 	}
 
@@ -139,6 +143,7 @@ void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai)
 
 	if (stream->state == I2S_STATE_ERROR) {
 		LOG_ERR("TX bad status: %d, Stopping...", stream->state);
+		__HAL_SAI_DISABLE(hsai);
 		goto exit;
 	}
 
@@ -146,6 +151,7 @@ void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai)
 		if (stream->state != I2S_STATE_READY) {
 			stream->state = I2S_STATE_ERROR;
 			LOG_ERR("TX mem_block NULL");
+			__HAL_SAI_DISABLE(hsai);
 			goto exit;
 		} else {
 			return;
@@ -156,6 +162,7 @@ void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai)
 		LOG_DBG("TX Stopped ...");
 		stream->state = I2S_STATE_READY;
 		stream->mem_block = NULL;
+		__HAL_SAI_DISABLE(hsai);
 		goto exit;
 	}
 
@@ -165,12 +172,14 @@ void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai)
 		LOG_DBG("Exit TX callback, no more data in the queue");
 		stream->state = I2S_STATE_READY;
 		stream->mem_block = NULL;
+		__HAL_SAI_DISABLE(hsai);
 		goto exit;
 	}
 
 	ret = k_msgq_get(&stream->queue, &item, K_NO_WAIT);
 	if (ret < 0) {
 		stream->state = I2S_STATE_ERROR;
+		__HAL_SAI_DISABLE(hsai);
 		goto exit;
 	}
 
