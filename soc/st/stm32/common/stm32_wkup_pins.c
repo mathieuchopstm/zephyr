@@ -140,7 +140,7 @@ static const uint32_t table_wakeup_pins[PWR_STM32_MAX_NB_WKUP_PINS + 1] = {
 static struct wkup_pin_dt_cfg_t wkup_pins_cfgs[] = {
 	DT_FOREACH_CHILD(STM32_PWR_NODE, WKUP_PIN_CFG_DT_COMMA)};
 
-#if PWR_STM32_WKUP_PINS_PUPD_CFG
+#if PWR_STM32_WKUP_PINS_PUPD_CFG || CONFIG_SOC_SERIES_STM32WBAX
 
 /**
  * @brief Array containing pointers to each GPIO port.
@@ -181,9 +181,26 @@ static const uint32_t table_ll_pwr_gpio_ports[] = {
 #endif /* CONFIG_SOC_SERIES_STM32U5X */
 };
 
-static const size_t pwr_ll_gpio_ports_cnt = ARRAY_SIZE(table_ll_pwr_gpio_ports);
+static const size_t __maybe_unused pwr_ll_gpio_ports_cnt = ARRAY_SIZE(table_ll_pwr_gpio_ports);
 
 #endif /* PWR_STM32_WKUP_PINS_PUPD_CFG */
+
+#ifdef CONFIG_SOC_SERIES_STM32WBAX
+static const uint32_t table_ll_pwr_gpio_retention_ports[] = {
+	LL_PWR_GPIO_STATE_RETENTION_ENABLE_PORTA,
+	LL_PWR_GPIO_STATE_RETENTION_ENABLE_PORTB,
+	LL_PWR_GPIO_STATE_RETENTION_ENABLE_PORTC,
+#if defined(PWR_STOP2_SUPPORT)
+	LL_PWR_GPIO_STATE_RETENTION_ENABLE_PORTD,
+	LL_PWR_GPIO_STATE_RETENTION_ENABLE_PORTE,
+	0, /* Port F doesn't exist */
+	LL_PWR_GPIO_STATE_RETENTION_ENABLE_PORTG,
+#else
+	0, 0, 0, 0,
+#endif /* defined(PWR_STOP2_SUPPORT) */
+	LL_PWR_GPIO_STATE_RETENTION_ENABLE_PORTH,
+};
+#endif /* CONFIG_SOC_SERIES_STM32WBAX */
 
 /**
  * @brief Configure & enable a wake-up pin.
@@ -325,6 +342,17 @@ int stm32_pwr_wkup_pin_cfg_gpio(const struct gpio_dt_spec *gpio)
 		wakeup_pin_cfg.pupd_cfg = STM32_PWR_WKUP_PIN_NOPULL;
 	}
 #endif /* PWR_STM32_WKUP_PINS_PUPD_CFG */
+
+#ifdef CONFIG_SOC_SERIES_STM32WBAX
+	for (i = 0; i < gpio_ports_cnt; i++) {
+		if (gpio_ports[i] == gpio->port) {
+			uint32_t llport = table_ll_pwr_gpio_retention_ports[i];
+			uint32_t llpin = 1U << gpio->pin; //c.f. stm32wbaxx_ll_pwr.h
+
+			LL_PWR_EnableGPIOStandbyRetention(llport, llpin);
+		}
+	}
+#endif /* CONFIG_SOC_SERIES_STM32WBAX */
 
 	wkup_pin_setup(&wakeup_pin_cfg);
 
