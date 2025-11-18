@@ -10,6 +10,10 @@
 	};
 };
 
+&cpu0 {
+	cpu-power-states = <&stop0 &stop1 &standby>;
+};
+
 &pwr {
 	status = "okay";
 };
