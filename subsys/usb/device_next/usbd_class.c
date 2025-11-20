@@ -367,7 +367,7 @@ int usbd_register_all_classes(struct usbd_context *const uds_ctx,
 
 			ret = usbd_register_class(uds_ctx, c_nd->c_data->name,
 						  speed, cfg);
-			if (ret) {
+			if (ret && ret != -EBUSY) {
 				LOG_ERR("Failed to register %s to HS configuration %u",
 					c_nd->c_data->name, cfg);
 				return ret;
@@ -385,7 +385,7 @@ int usbd_register_all_classes(struct usbd_context *const uds_ctx,
 
 			ret = usbd_register_class(uds_ctx, c_nd->c_data->name,
 						  speed, cfg);
-			if (ret) {
+			if (ret && ret != -EBUSY) {
 				LOG_ERR("Failed to register %s to FS configuration %u",
 					c_nd->c_data->name, cfg);
 				return ret;

@@ -11,8 +11,12 @@
 	};
 };
 
-&zephyr_udc0 {
+/*
+ * This nodelabel is consumed by the
+ */
+zephyr_cdc_acm_console: &zephyr_udc1 {
 	snippet_cdc_acm_console_uart: snippet_cdc_acm_console_uart {
 		compatible = "zephyr,cdc-acm-uart";
+		label = "Console ACM";
 	};
 };
