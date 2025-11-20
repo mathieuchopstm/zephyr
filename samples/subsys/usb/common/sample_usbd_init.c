@@ -158,7 +158,7 @@ struct usbd_context *sample_usbd_setup_device(usbd_msg_cb_t msg_cb)
 	/* doc functions register start */
 	err = usbd_register_all_classes(&sample_usbd, USBD_SPEED_FS, 1, blocklist);
 	if (err) {
-		LOG_ERR("Failed to add register classes");
+		LOG_ERR("Failed to add register classes: %d", err);
 		return NULL;
 	}
 	/* doc functions register end */
