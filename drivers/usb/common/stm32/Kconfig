@@ -18,7 +18,7 @@ config STM32_PHY_USBPHYC
 
 config STM32_PHY_U5OTGHSPHY
 	def_bool y
-	depends on DT_HAS_ST_STM32U5_OTGHS_PHY_ENABLED
+	depends on DT_HAS_ST_STM32U5_OTGHS_PHY_ENABLED || DT_HAS_ST_STM32_EMBEDDED_OTGHS_PHY_ENABLED
 	help
 	  Enable STM32 embedded High-Speed PHY as found
 	  first in STM32U5 series.
