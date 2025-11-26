@@ -1,0 +1,61 @@
+# Copyright (c) 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+title: STM32 embedded High-Speed USB PHY for OTG_HS
+
+description: |
+  Embedded High-Speed USB PHY connected to OTG_HS peripheral over UTMI+.
+
+  Found on all series which have an OTG_HS instance with embedded PHY when
+  the PHY is not the ST "USBPHYC" covered by "st,stm32-usbphyc" binding.
+
+compatible: "st,stm32-embedded-otghs-phy"
+
+include: phy-controller.yaml
+
+properties:
+  "#phy-cells":
+    const: 0
+
+  clocks:
+    required: true
+    description: |
+      HS PHY clock configuration
+
+      This is an array of two cells:
+        - the first indicates the RCC bit enabling the PHY's clock
+        - the second indicates the PHY clock mux configuration
+
+      For example, on STM32H7R/S series:
+        /*
+         * RCC_AHB1ENR bit 26 = USBPHYCEN
+         * RCC_CCIPR1 [13:12] = USBPHYCSEL
+         */
+
+        /* hse_ker_ck */
+        clocks = <&rcc STM32_CLOCK(AHB1, 26)>,
+                 <&rcc STM32_SRC_HSE USBPHYC_SEL(0)>;
+
+        /* (hse_ker_ck / 2) */
+        clocks = <&rcc STM32_CLOCK(AHB1, 26)>,
+                 <&rcc (STM32_SRC_HSE | STM32_CLOCK_DIV(2)) USBPHYC_SEL(1)>;
+
+        /* pll3_q_ck */
+        clocks = <&rcc STM32_CLOCK(AHB1, 26)>,
+                 <&rcc STM32_SRC_HSE USBPHYC_SEL(0)>;
+
+  input-frequency:
+    type: string
+    required: true
+    enum:
+      - "16M"
+      - "19.2M"
+      - "20M"
+      - "24M"
+      - "26M"
+      - "32M"
+    description: |
+      HS PHY input clock frequency (in Hz)
+
+      This should be determined based on the system's clock configuration.
+      For example, if the PHY input clock is 16 MHz, use value "16M".

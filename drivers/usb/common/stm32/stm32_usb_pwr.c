@@ -99,6 +99,27 @@ int stm32_usb_pwr_enable(void) {
 	while (!LL_PWR_IsActiveFlag_USBBOOSTRDY()) {
 		/* Wait for USB OTG booster to be ready */
 	}
+#elif defined(CONFIG_SOC_SERIES_STM32H7RSX)
+	/* Enable VDD33USB voltage detector (mandatory for USB usage) */
+	LL_PWR_EnableUSBVoltageDetector();
+	while (!LL_PWR_IsEnabledUSBVoltageDetector()) {
+
+	}
+
+	/* Check if an external supply provides VDD33USB */
+	if (!LL_PWR_IsActiveFlag_USB33RDY()) {
+		/*
+		 * No external power supply providing VDD33USB:
+		 * enable the SoC's internal voltage regulator.
+		 */
+		LOG_INF("External VDD33USB supply not detected; enabling USB regulator");
+		LL_PWR_EnableUSBReg();
+	}
+
+	if (DT_HAS_COMPAT_STATUS_OKAY(st_stm32_otghs)) {
+		/* Enable HS PHY power regulator if OTG_HS is used */
+		LL_PWR_EnableUSBHSPHYReg();
+	}
 #elif defined(PWR_USBSCR_USB33SV) || defined(PWR_SVMCR_USV)
 	/*
 	 * VDDUSB independent USB supply (PWR clock is on)

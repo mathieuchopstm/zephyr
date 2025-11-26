@@ -338,13 +338,24 @@
 	status = "okay";
 };
 
-usb2: &usbotg_fs {
-	pinctrl-0 = <&usb_otg_fs_dm_pm12 &usb_otg_fs_dp_pm11>;
+/* USB1 */
+zephyr_udc0: &usbotg_hs {
+	pinctrl-0 = <&usb_otg_hs_dm_pm5 &usb_otg_hs_dp_pm6>;
 	pinctrl-names = "default";
 	status = "okay";
 };
 
-zephyr_udc0: &usb2 {};
+&otghs_phy {
+	status = "okay";
+	input-frequency = "24M";
+};
+
+/* USB2 */
+zephyr_udc1: &usbotg_fs {
+	pinctrl-0 = <&usb_otg_fs_dm_pm12 &usb_otg_fs_dp_pm11>;
+	pinctrl-names = "default";
+	status = "okay";
+};
 
 &ltdc {
 	pinctrl-0 = <&ltdc_r0_pf9 &ltdc_r1_pf10 &ltdc_r2_pf0 &ltdc_r3_pb4

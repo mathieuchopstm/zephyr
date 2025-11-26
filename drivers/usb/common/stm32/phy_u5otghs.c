@@ -25,6 +25,7 @@
 
 /* Even though we won't use this macro, define it for grep-ability */
 #define DT_DRV_COMPAT st_stm32u5_otghs_phy
+/* #define DT_DRV_COMPAT st,stm32-embedded-otghs-phy*/
 
 struct stm32_u5otghs_phy_config {
 	uint32_t reference;
@@ -39,6 +40,8 @@ static int stm32_u5otghs_phy_enable(const struct stm32_usb_phy *phy)
 	const struct stm32_u5otghs_phy_config *cfg = phy->pcfg;
 	int res;
 
+	/* SoC-specific configuration */
+#if defined(CONFIG_SOC_SERIES_STM32U5X) || defined(CONFIG_SOC_SERIES_STM32WBAX)
 	/* Enable SYSCFG where PHY configuration registers reside */
 	__HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -47,6 +50,11 @@ static int stm32_u5otghs_phy_enable(const struct stm32_usb_phy *phy)
 
 	/* Deassert PHY reset */
 	HAL_SYSCFG_EnableOTGPHY(SYSCFG_OTG_HS_PHY_ENABLE);
+#elif defined(CONFIG_SOC_SERIES_STM32H7RSX)
+	LL_RCC_SetUSBREFClockSource(cfg->reference);
+#else
+#error Unsupported SoC series (missing driver update?)
+#endif /* CONFIG_SOC_SERIES_* */
 
 	/* Configure PHY input mux (if provided) */
 	if (cfg->num_clocks > 1) {
@@ -73,8 +81,16 @@ static int stm32_u5otghs_phy_disable(const struct stm32_usb_phy *phy)
  * SYSCFG_OTG_HS_PHY_CLK_SELECT_<> values go from 1 to N,
  * but DT_ENUM_IDX() is zero-based, hence the UTIL_INC().
  */
-#define PHY_CLK_REF(n)	\
+#define PHY_CLK_REF_U5_WBA(n)	\
 	CONCAT(SYSCFG_OTG_HS_PHY_CLK_SELECT_, UTIL_INC(DT_ENUM_IDX(n, clock_reference)))
+
+#define PHY_CLK_REF_H7RS(n)	\
+	CONCAT(LL_RCC_USBREF_CLKSOURCE_, DT_STRING_TOKEN(n, input_frequency))
+
+#define PHY_CLK_REF(n)	\
+	IF_ENABLED(CONFIG_SOC_SERIES_STM32H7RSX, (PHY_CLK_REF_H7RS(n)))		\
+	IF_ENABLED(CONFIG_SOC_SERIES_STM32U5X, (PHY_CLK_REF_U5_WBA(n)))		\
+	IF_ENABLED(CONFIG_SOC_SERIES_STM32WBAX, (PHY_CLK_REF_U5_WBA(n)))
 
 /*
  * Note that SYSCFG_OTG_HS_PHY_CLK_SELECT goes from 1 to N whereas
