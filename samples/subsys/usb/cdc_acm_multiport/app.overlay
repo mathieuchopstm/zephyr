@@ -1,0 +1,26 @@
+/*
+ * Copyright (c) 2025 STMicroelectronics
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Define at least two devices: the non-multiport sample
+ * would have been used instead if there was only one in
+ * target device.
+ *
+ * Overlays can be used to add more ports if necessary.
+ */
+&zephyr_udc0 {
+	cdc_acm_uart0: cdc_acm_0 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "Zephyr USB CDC-ACM on UDC0";
+	};
+};
+
+&zephyr_udc1 {
+	cdc_acm_uart1: cdc_acm_1 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "Zephyr USB CDC-ACM on UDC1";
+	};
+};
