@@ -14,6 +14,7 @@ import shutil
 from pathlib import Path
 
 from runners.core import MissingProgram, RunnerCaps, RunnerConfig, ZephyrBinaryRunner
+from runners.st_common import CubeToolInfo
 
 STLINK_GDB_SERVER_DEFAULT_PORT = 61234
 
@@ -49,6 +50,12 @@ class STLinkGDBServerRunner(ZephyrBinaryRunner):
             # Sort candidates and return the path to the most recent version
             most_recent_install = sorted(installations, key=lambda e: e[0], reverse=True)[0]
             return most_recent_install[1]
+
+        # Try using the cross-platform `cube` wrapper tool
+        if ((cti := CubeToolInfo.get_tool_info()) and
+            (stl_path := cti.get_exe_path("stlink-gdbsever")) and
+            (prg_path := cti.get_exe_path("programmer"))):
+                return (stl_path, prg_path.parent)
 
         cur_platform = platform.system()
 

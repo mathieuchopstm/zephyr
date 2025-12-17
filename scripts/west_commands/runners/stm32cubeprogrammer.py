@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import ClassVar
 
 from runners.core import RunnerCaps, RunnerConfig, ZephyrBinaryRunner
-
+from runners.st_common import CubeToolInfo
 
 class STM32CubeProgrammerBinaryRunner(ZephyrBinaryRunner):
     """Runner front-end for STM32CubeProgrammer CLI."""
@@ -90,6 +90,11 @@ class STM32CubeProgrammerBinaryRunner(ZephyrBinaryRunner):
     @staticmethod
     def _get_stm32cubeprogrammer_path() -> Path:
         """Obtain path of the STM32CubeProgrammer CLI tool."""
+
+        # Try using the cross-platform `cube` wrapper tool
+        if ((cti := CubeToolInfo.get_tool_info()) and
+            (prg_cli_path := cti.get_exe_path("programmer"))):
+                return prg_cli_path
 
         if platform.system() == "Linux":
             cmd = shutil.which("STM32_Programmer_CLI")
