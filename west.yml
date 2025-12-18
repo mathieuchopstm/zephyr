@@ -256,6 +256,7 @@ manifest:
         - hal
     - name: hal_stm32
       revision: 9d05ebdff47b5071fa092de243a1244e7c27f518
+      west-commands: west/west-commands.yml
       path: modules/hal/stm32
       groups:
         - hal
