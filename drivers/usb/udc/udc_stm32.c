@@ -1111,6 +1111,7 @@ static void priv_pcd_prepare(const struct device *dev)
 	priv->pcd.Init.dev_endpoints = cfg->num_endpoints;
 	priv->pcd.Init.ep0_mps = cfg->ep0_mps;
 	priv->pcd.Init.speed = cfg->selected_speed;
+	priv->pcd.Init.Sof_enable = 1;
 
 	/* Per controller/Phy values */
 #if defined(USB)
