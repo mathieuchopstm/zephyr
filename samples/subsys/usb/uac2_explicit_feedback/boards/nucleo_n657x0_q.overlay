@@ -1,0 +1,51 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+#include "../app.overlay"
+
+/ {
+    mem_non: memory@24100000
+    {
+        compatible = "zephyr,memory-region", "mmio-sram";
+        reg = <0x24100000 0x1000>;
+        zephyr,memory-region = "mem_non";
+        zephyr,memory-attr = <( DT_MEM_ARM_MPU_RAM_NOCACHE )>;
+    };
+};
+
+&pll2
+{
+    clocks = <&clk_hse>;
+    div-m = <5>;
+    mul-n = <32>;
+    div-p1 = <1>;
+    div-p2 = <1>;
+    status = "okay";
+};
+
+&ic7
+{
+    pll-src = <2>;
+    ic-div = <25>;
+    status = "okay";
+};
+
+&gpdma1
+{
+    status = "okay";
+};
+
+/* 44.084KHz (-0.03% Error) */
+i2s_tx: &sai2_b
+{
+    clocks = <&rcc STM32_CLOCK(APB2, 22)>, <&rcc STM32_SRC_IC7 SAI2_SEL(2)>;
+    pinctrl-0 = <&sai2_mclk_b_pe14 &sai2_sd_b_pe7 &sai2_fs_b_pe13 &sai2_sck_b_pe12>;
+    pinctrl-names = "default";
+    status = "okay";
+    mclk-enable;
+    mclk-divider = "no-div";
+    dma-names = "tx";
+};
+
+&zephyr_udc0 {
+	maximum-speed = "full-speed";
+};
