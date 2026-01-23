@@ -1233,6 +1233,7 @@ static void priv_pcd_prepare(const struct device *dev)
 	priv->pcd.Init.dev_endpoints = cfg->num_endpoints;
 	priv->pcd.Init.ep0_mps = UDC_STM32_EP0_MAX_PACKET_SIZE;
 	priv->pcd.Init.speed = cfg->selected_speed;
+	priv->pcd.Init.Sof_enable = 1;
 
 	/* Per controller/Phy values */
 #if defined(USB)
