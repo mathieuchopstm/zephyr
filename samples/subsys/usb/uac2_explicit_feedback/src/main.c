@@ -84,19 +84,19 @@ static void *uac2_get_recv_buf(const struct device *dev, uint8_t terminal,
 	void *buf = NULL;
 	int ret;
 
-	if (terminal == HEADPHONES_OUT_TERMINAL_ID) {
+/*	if (terminal == HEADPHONES_OUT_TERMINAL_ID) {
 		__ASSERT_NO_MSG(size <= MAX_BLOCK_SIZE);
 
 		if (!ctx->terminal_enabled) {
 			LOG_ERR("Buffer request on disabled terminal");
 			return NULL;
 		}
-
+*/
 		ret = k_mem_slab_alloc(&i2s_tx_slab, &buf, K_NO_WAIT);
 		if (ret != 0) {
 			buf = NULL;
 		}
-	}
+//	}
 
 	return buf;
 }
@@ -107,10 +107,10 @@ static void uac2_data_recv_cb(const struct device *dev, uint8_t terminal,
 	struct usb_i2s_ctx *ctx = user_data;
 	int ret;
 
-	if (!ctx->terminal_enabled) {
+//	if (!ctx->terminal_enabled) {
 		k_mem_slab_free(&i2s_tx_slab, buf);
 		return;
-	}
+//	}
 
 	if (!size) {
 		/* Zero fill to keep I2S going. If this is transient error, then
