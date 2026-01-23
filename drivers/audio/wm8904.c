@@ -10,6 +10,9 @@
 #include <zephyr/drivers/clock_control.h>
 #include <zephyr/audio/codec.h>
 #include <zephyr/devicetree/clocks.h>
+#ifdef CONFIG_SOC_FAMILY_STM32
+#include <zephyr/drivers/clock_control/stm32_clock_control.h>
+#endif
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(wolfson_wm8904);
@@ -489,11 +492,14 @@ static int wm8904_configure(const struct device *dev, struct audio_codec_cfg *cf
 			  (uint16_t)(dev_cfg->clock_source));
 
 	if (dev_cfg->clock_source == 0) {
-		int err = clock_control_on(dev_cfg->mclk_dev, dev_cfg->mclk_name);
+		int err;
 
+#ifndef CONFIG_SOC_FAMILY_STM32
+		err = clock_control_on(dev_cfg->mclk_dev, dev_cfg->mclk_name);
 		if (err < 0) {
 			LOG_ERR("MCLK clock source enable fail: %d", err);
 		}
+#endif
 
 		err = clock_control_get_rate(dev_cfg->mclk_dev, dev_cfg->mclk_name,
 					     &cfg->mclk_freq);
@@ -501,6 +507,10 @@ static int wm8904_configure(const struct device *dev, struct audio_codec_cfg *cf
 			LOG_ERR("MCLK clock source freq acquire fail: %d", err);
 		}
 	}
+
+#if CONFIG_SOC_FAMILY_STM32
+	LOG_ERR("MCLK/kernel source frequency = %u", cfg->mclk_freq);
+#endif
 
 	wm8904_audio_fmt_config(dev, &cfg->dai_cfg, cfg->mclk_freq);
 
@@ -669,11 +679,14 @@ static const struct audio_codec_api wm8904_driver_api = {
 };
 
 #define WM8904_INIT(n)                                                                             \
+	IF_ENABLED(CONFIG_SOC_FAMILY_STM32,							\
+		(static const struct stm32_pclken wm8904_clk_##n[] = STM32_DT_INST_CLOCKS(n);))	\
 	static const struct wm8904_driver_config wm8904_device_config_##n = {                      \
 		.i2c = I2C_DT_SPEC_INST_GET(n),                                                    \
 		.clock_source = DT_INST_ENUM_IDX(n, clock_source),				   \
 		.mclk_dev = DEVICE_DT_GET(DT_INST_CLOCKS_CTLR_BY_NAME(n, mclk)),                   \
-		.mclk_name = (clock_control_subsys_t)DT_INST_CLOCKS_CELL_BY_NAME(n, mclk, name)};  \
+		.mclk_name = (clock_control_subsys_t)COND_CODE_1(CONFIG_SOC_FAMILY_STM32,	\
+			(&wm8904_clk_##n), (DT_INST_CLOCKS_CELL_BY_NAME(n, mclk, name))),};  \
                                                                                                    \
 	DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &wm8904_device_config_##n,        \
 			      POST_KERNEL, CONFIG_AUDIO_CODEC_INIT_PRIORITY, &wm8904_driver_api);
