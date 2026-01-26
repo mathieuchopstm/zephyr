@@ -1,0 +1,83 @@
+//
+//
+//
+
+/ {
+	aliases {
+		i2s-codec-tx = &i2s_tx;
+	};
+};
+
+audio_codec: &wm8904 {
+	clocks = <&rcc STM32_SRC_IC7 NO_SEL>;
+	clock-names = "mclk";
+};
+
+/*
+ * f_IC7 = 12.288 MHz (1.536 GHz / 125)
+ */
+&ic7 {
+	pll-src = <2>;
+	ic-div = <125>;
+	status = "okay";
+};
+
+&gpdma1 {
+	status = "okay";
+};
+
+i2s_tx: &sai1_a {
+	clocks = <&rcc STM32_CLOCK(APB2, 22)>, <&rcc STM32_SRC_IC7 SAI1_SEL(2)>;
+	pinctrl-0 = <&sai1_mclk_a_pg7 &sai1_sd_a_pb7 &sai1_fs_a_pb0 &sai1_sck_a_pb6>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	mclk-enable;
+	mclk-divider = "div-256";
+	dma-names = "tx";
+};
+
+/*
+&pll1: <&clk_hse>; div-m = <3>; mul-n = <150>;		=> 2.400 GHz
+&pll2: <&clk_hsi>; div-m = <2>; mul-n = <48>;		=> 1.536 GHz
+&pll3: <&clk_hse>; div-m = <3>; mul-n = <125>;		=> 2.000 GHz
+&pll4: <&clk_hsi>; div-m = <4>; mul-n = <75>;		=> 1.200 GHz
+
+2.400 GHz / 488.28125 = 2.4576 MHz
+1.536 GHz / 625       = 2.4576 MHz
+2.000 GHz / 813.80208 = 2.4576 MHz
+1.200 GHz / 488.28125 = 2.4576 MHz
+
+FRL=32 --> MCLK = FS(48kHz) * 32 * MCKDIV
+*/
+
+/*
+SAI_SD   = data		= DACDAT
+SAI_FS   = frame sync	= LRCK		= 48 kHz
+SAI_SCK  = bit clock	= BCLK		>= SCK * bits_in_sample * nchannels
+SAI_MCLK = master clock	= MCLK		should be 12.288 MHz (= 256 * 48 kHz)
+*/
+
+/*
+ * SAI1 sources:
+ *
+ * 000: pclk2 selected as reference clock
+ * 001: per_ck selected as reference clock
+ *	= PERSEL mux
+ *	 - hsi_ck
+ *	 - msi_ck
+ *	 - hse_ck
+ *	 - ic19_ck
+ *	 - ic5_ck
+ *	 - ic10_ck
+ *	 - ic15_ck
+ *	 - ic20_ck
+ * 010: ic7_ck selected as reference clock
+ * 011: ic8_ck selected as reference clock
+ * 100: msi_ck selected as reference clock
+ * 101: hsi_div_ck selected as reference clock
+ *	= hsi / HSIDIV
+ * 110: I2S_CKIN selected as reference clock
+ * 111: spdif_symb_ck selected as reference clock
+ *	= ???
+ */

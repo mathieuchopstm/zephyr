@@ -256,6 +256,7 @@ static void dma_stm32_irq_handler(const struct device *dev, uint32_t id)
 	int status;
 
 	__ASSERT_NO_MSG(id < config->max_streams);
+	LOG_DBG("IRQ(%p, 0x%08X)\n", dev, id);
 
 	stream = &config->streams[id];
 	/* The busy channel is pertinent if not overridden by the HAL */

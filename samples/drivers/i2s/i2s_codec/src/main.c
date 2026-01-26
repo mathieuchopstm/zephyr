@@ -209,7 +209,10 @@ int main(void)
 				break;
 			}
 			if (!started) {
-				i2s_trigger(i2s_dev_codec, I2S_DIR_TX, I2S_TRIGGER_START);
+				ret = i2s_trigger(i2s_dev_codec, I2S_DIR_TX, I2S_TRIGGER_START);
+				if (ret < 0) {
+					printk("failed to trigger: %d", ret);
+				}
 				started = true;
 			}
 		}

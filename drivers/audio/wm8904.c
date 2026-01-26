@@ -486,11 +486,14 @@ static int wm8904_configure(const struct device *dev, struct audio_codec_cfg *cf
 			  (uint16_t)(dev_cfg->clock_source));
 
 	if (dev_cfg->clock_source == 0) {
-		int err = clock_control_on(dev_cfg->mclk_dev, dev_cfg->mclk_name);
+		int err;
 
+#ifndef CONFIG_SOC_FAMILY_STM32
+		err = clock_control_on(dev_cfg->mclk_dev, dev_cfg->mclk_name);
 		if (err < 0) {
 			LOG_ERR("MCLK clock source enable fail: %d", err);
 		}
+#endif
 
 		err = clock_control_get_rate(dev_cfg->mclk_dev, dev_cfg->mclk_name,
 					     &cfg->mclk_freq);
