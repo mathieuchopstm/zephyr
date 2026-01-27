@@ -79,6 +79,7 @@ void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 {
 	struct i2s_stm32_sai_data *dev_data = CONTAINER_OF(hsai, struct i2s_stm32_sai_data, hsai);
 	struct stream *stream = &dev_data->stream;
+	HAL_StatusTypeDef status;
 	int ret;
 
 	/* Exit the callback, Stream is stopped */
@@ -118,9 +119,9 @@ void HAL_SAI_RxCpltCallback(SAI_HandleTypeDef *hsai)
 
 	stream->mem_block_len = stream->i2s_cfg.block_size;
 
-	if (HAL_SAI_Receive_DMA(hsai, stream->mem_block,
-				stream->mem_block_len / stream->dma_src_size) != HAL_OK) {
-		LOG_ERR("HAL_SAI_Receive_DMA: <FAILED>");
+	status = HAL_SAI_Receive_DMA(hsai, stream->mem_block, stream->mem_block_len / stream->dma_src_size);
+	if (status != HAL_OK) {
+		LOG_ERR("HAL_SAI_Receive_DMA: <FAILED> %d", (int)status);
 	}
 
 exit:
@@ -133,6 +134,7 @@ void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai)
 	struct stream *stream = &dev_data->stream;
 	void *mem_block_tmp = stream->mem_block;
 	struct queue_item item;
+	HAL_StatusTypeDef status;
 	int ret;
 
 	if (stream->state == I2S_STATE_ERROR) {
@@ -177,9 +179,9 @@ void HAL_SAI_TxCpltCallback(SAI_HandleTypeDef *hsai)
 
 	sys_cache_data_flush_range(stream->mem_block, stream->mem_block_len);
 
-	if (HAL_SAI_Transmit_DMA(hsai, stream->mem_block,
-				 stream->mem_block_len / stream->dma_src_size) != HAL_OK) {
-		LOG_ERR("HAL_SAI_Transmit_DMA: <FAILED>");
+	status = HAL_SAI_Transmit_DMA(hsai, stream->mem_block, stream->mem_block_len);
+	if (status != HAL_OK) {
+		LOG_ERR("HAL_SAI_Transmit_DMA (from TxCpltCallback): <FAILED> %d", (int)status);
 	}
 
 exit:
@@ -648,6 +650,7 @@ static int stream_start(const struct device *dev, enum i2s_dir dir)
 	struct i2s_stm32_sai_data *dev_data = dev->data;
 	struct stream *stream = &dev_data->stream;
 	SAI_HandleTypeDef *hsai = &dev_data->hsai;
+	HAL_StatusTypeDef status;
 	struct queue_item item;
 	int ret;
 
@@ -662,10 +665,10 @@ static int stream_start(const struct device *dev, enum i2s_dir dir)
 
 		sys_cache_data_flush_range(stream->mem_block, stream->mem_block_len);
 
-		if (HAL_SAI_Transmit_DMA(hsai, stream->mem_block,
-					 stream->mem_block_len / stream->dma_src_size) != HAL_OK) {
-			LOG_ERR("HAL_SAI_Transmit_DMA: <FAILED>");
-			return -EIO;
+		status = HAL_SAI_Transmit_DMA(hsai, stream->mem_block, stream->mem_block_len);
+		if (status != HAL_OK) {
+			LOG_ERR("HAL_SAI_Transmit_DMA: <FAILED> %d", (int)status);
+			return status == HAL_TIMEOUT ? -ETIMEDOUT : -EIO;
 		}
 	} else {
 
@@ -800,9 +803,28 @@ static int i2s_stm32_sai_trigger(const struct device *dev, enum i2s_dir dir,
 	return 0;
 }
 
+const struct i2s_config *i2s_stm32_sai_config_get(const struct device *dev, enum i2s_dir dir)
+{
+	struct i2s_stm32_sai_data *dev_data = dev->data;
+	uint32_t mode = dev_data->hsai.Init.AudioMode;
+
+	if (dir == I2S_DIR_RX) {
+		if (mode == SAI_MODEMASTER_RX || mode == SAI_MODESLAVE_RX) {
+			return &dev_data->stream.i2s_cfg;
+		}
+	} else /* I2S_DIR_TX */ {
+		if (mode == SAI_MODEMASTER_TX || mode == SAI_MODESLAVE_TX) {
+			return &dev_data->stream.i2s_cfg;
+		}
+	}
+
+	return NULL;
+}
+
 static DEVICE_API(i2s, i2s_stm32_driver_api) = {
 	.configure = i2s_stm32_sai_configure,
 	.trigger = i2s_stm32_sai_trigger,
+	.config_get = i2s_stm32_sai_config_get,
 	.write = i2s_stm32_sai_write,
 	.read = i2s_stm32_sai_read,
 };
