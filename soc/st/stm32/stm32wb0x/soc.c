@@ -11,6 +11,7 @@
 
 #include <zephyr/device.h>
 #include <zephyr/init.h>
+#include <zephyr/linker/devicetree_regions.h>
 #include <stm32_ll_bus.h>
 #include <stm32_ll_pwr.h>
 #include <stm32_ll_system.h>
@@ -51,6 +52,18 @@ Z_GENERIC_SECTION(stm32wb0_BLUE_RAM)
 static uint8_t __used __blue_RAM[sizeof(GLOBALSTATMACH_TypeDef) +
 				 CFG_BLE_NUM_RADIO_TASKS * sizeof(STATMACH_TypeDef)];
 #endif /* CONFIG_BT */
+
+#if defined(CONFIG_PM) && defined(CONFIG_PM_S2RAM)
+#define BLSTACK_NODE DT_NODELABEL(wb0_bootloader_stack)
+
+/*
+ * Create a dummy variable that fills the bootloader
+ * stack area. This ensures the image will not build
+ * if Zephyr occupies too much RAM.
+ */
+Z_GENERIC_SECTION(LINKER_DT_NODE_REGION_NAME(BLSTACK_NODE))
+uint8_t __used _wb0_bootloader_stack[DT_REG_SIZE(BLSTACK_NODE)];
+#endif /* CONFIG_PM && CONFIG_PM_S2RAM */
 
 /** Power Controller node (shorthand for upcoming macros) */
 #define PWRC DT_INST(0, st_stm32wb0_pwr)

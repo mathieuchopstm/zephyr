@@ -36,16 +36,6 @@ LOG_MODULE_DECLARE(soc, CONFIG_SOC_LOG_LEVEL);
 #define HAS_GPIO_RETENTION 0
 #endif /* CONFIG_SOC_STM32WB05XX || CONFIG_SOC_STM32WB09XX */
 
-/* System-level state managed by PM callbacks
- * Things that need to be preserved across Deepstop, but
- * have no associated driver to backup and restore them.
- */
-#define STM32WB0_SRAM		DT_CHOSEN(zephyr_sram)
-#define STM32WB0_BL_STACK_SIZE	(20 * 4)	/* in bytes */
-#define STM32WB0_BL_STACK_TOP	((void *)(DT_REG_ADDR(STM32WB0_SRAM) + DT_REG_SIZE(STM32WB0_SRAM) \
-					  - STM32WB0_BL_STACK_SIZE))
-
-static uint8_t bl_stk_area_backup[STM32WB0_BL_STACK_SIZE];
 static uint32_t rcc_apb1enr_vr, rcc_ahbenr_vr;
 
 /* Callback for arch_pm_s2ram_suspend */
@@ -110,17 +100,6 @@ static void prepare_for_deepstop_entry(void)
 		LL_PWR_EnableDBGRET();
 	}
 #endif /* HAS_GPIO_RETENTION */
-
-	/* The STM32WB0 bootloader uses the end of SRAM as stack.
-	 * Since it is executed on every reset, including wakeup
-	 * from Deepstop, any data placed at the end of SRAM would
-	 * be corrupted.
-	 * Backup these words for later restoration to avoid data
-	 * corruption. A much better solution would be to mark this part
-	 * of SRAM as unusable, but no easy solution was found to
-	 * achieve this.
-	 */
-	memcpy(bl_stk_area_backup, STM32WB0_BL_STACK_TOP, STM32WB0_BL_STACK_SIZE);
 }
 
 /* Restore SoC-level configuration lost in Deepstop
@@ -138,9 +117,6 @@ static void post_resume_configuration(void)
 	/* Restore the clock configuration. */
 	RCC->AHBENR = rcc_ahbenr_vr;
 	RCC->APB1ENR = rcc_apb1enr_vr;
-
-	/* Restore bootloader stack area */
-	memcpy(STM32WB0_BL_STACK_TOP, bl_stk_area_backup, STM32WB0_BL_STACK_SIZE);
 }
 
 /* Power Management subsystem callbacks */
