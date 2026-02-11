@@ -277,10 +277,14 @@ struct k_thread {
 	struct k_thread *next_event_link;
 
 	uint32_t   events; /* dual purpose - wait on and then received */
-	uint32_t   event_options;
 
-	/** true if timeout should not wake the thread */
-	bool no_wake_on_timeout;
+	/**
+	 * k_event_wait() options, and flags for the scheduler
+	 *
+	 * See K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT in kernel_internal.h
+	 * and K_EVENT_* defines in events.c for more details.
+	 */
+	uint32_t   evt_opts_and_flags;
 #endif /* CONFIG_EVENTS */
 
 #if defined(CONFIG_THREAD_MONITOR)

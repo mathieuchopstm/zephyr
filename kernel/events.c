@@ -110,7 +110,7 @@ static int event_walk_op(struct k_thread *thread, void *data)
 	unsigned int wait_condition;
 	struct event_walk_data *event_data = data;
 
-	wait_condition = thread->event_options & K_EVENT_WAIT_MASK;
+	wait_condition = thread->evt_opts_and_flags & K_EVENT_WAIT_MASK;
 
 	match = are_wait_conditions_met(thread->events, event_data->events,
 					wait_condition);
@@ -123,7 +123,7 @@ static int event_walk_op(struct k_thread *thread, void *data)
 		 * NOTE: thread event options can consume an event
 		 */
 		thread->events = match;
-		if (thread->event_options & K_EVENT_OPTION_CLEAR) {
+		if (thread->evt_opts_and_flags & K_EVENT_OPTION_CLEAR) {
 			event_data->clear_events |= match;
 		}
 		thread->next_event_link = event_data->head;
@@ -135,7 +135,7 @@ static int event_walk_op(struct k_thread *thread, void *data)
 		 * will be woken up by k_event_post_internal once they
 		 * have been processed.
 		 */
-		thread->no_wake_on_timeout = true;
+		thread->evt_opts_and_flags |= K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT;
 #ifdef CONFIG_SYS_CLOCK_EXISTS
 		z_abort_timeout(&thread->base.timeout);
 #endif /* CONFIG_SYS_CLOCK_EXISTS */
@@ -306,7 +306,7 @@ static uint32_t k_event_wait_internal(struct k_event *event, uint32_t events,
 	 */
 
 	thread->events = events;
-	thread->event_options = options;
+	thread->evt_opts_and_flags = options;
 
 	SYS_PORT_TRACING_OBJ_FUNC_BLOCKING(k_event, wait, event, events,
 					   options, timeout);
