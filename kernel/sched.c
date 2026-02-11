@@ -629,9 +629,10 @@ void z_sched_wake_thread(struct k_thread *thread, bool is_timeout)
 				(_THREAD_DEAD | _THREAD_ABORTING));
 
 #ifdef CONFIG_EVENTS
-		bool do_nothing = thread->no_wake_on_timeout && is_timeout;
+		bool do_nothing = is_timeout &&
+			(thread->evt_opts_and_flags & K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT);
 
-		thread->no_wake_on_timeout = false;
+		thread->evt_opts_and_flags &= ~K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT;
 
 		if (do_nothing) {
 			continue;

@@ -654,7 +654,7 @@ char *z_setup_new_thread(struct k_thread *new_thread,
 	new_thread->custom_data = NULL;
 #endif /* CONFIG_THREAD_CUSTOM_DATA */
 #ifdef CONFIG_EVENTS
-	new_thread->no_wake_on_timeout = false;
+	new_thread->evt_opts_and_flags = 0U;
 #endif /* CONFIG_EVENTS */
 #ifdef CONFIG_THREAD_MONITOR
 	new_thread->entry.pEntry = entry;

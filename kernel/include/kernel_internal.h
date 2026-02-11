@@ -25,6 +25,14 @@
 extern "C" {
 #endif
 
+/*
+ * Special flag stashed in k_thread.evt_opts_and_flags
+ * indicating that a k_event_wait() for the thread is
+ * undergoing completion, meaning the thread must not
+ * be awakened if its timeout elapses.
+ */
+#define K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT BIT(31)
+
 /* Initialize per-CPU kernel data */
 void z_init_cpu(int id);
 
