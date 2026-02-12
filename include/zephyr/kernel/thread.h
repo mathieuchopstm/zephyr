@@ -274,7 +274,9 @@ struct k_thread {
 #endif /* CONFIG_POLL */
 
 #if defined(CONFIG_EVENTS)
+#if defined(CONFIG_WAITQ_SCALABLE)
 	struct k_thread *next_event_link;
+#endif /* CONFIG_WAITQ_SCALABLE */
 
 	uint32_t   events; /* dual purpose - wait on and then received */
 

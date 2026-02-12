@@ -42,7 +42,9 @@
 #define K_EVENT_OPTION_CLEAR  0x04   /* Clear events that are received */
 
 struct event_walk_data {
+#ifdef CONFIG_WAITQ_SCALABLE
 	struct k_thread  *head;
+#endif /* CONFIG_WAITQ_SCALABLE */
 	uint32_t events;
 	uint32_t clear_events;
 };
@@ -116,9 +118,10 @@ static int event_walk_op(struct k_thread *thread, void *data)
 					wait_condition);
 	if (match != 0) {
 		/*
-		 * The wait conditions have been satisfied. So, set the
-		 * received events and then add this thread to the list
-		 * of threads to unpend.
+		 * The wait conditions have been satisfied. Set the
+		 * received events then wake thread now (if allowed)
+		 * or add it to the list of threads to unpend.
+		 * (c.f. k_event_post_internal()/z_sched_waitq_walk())
 		 *
 		 * NOTE: thread event options can consume an event
 		 */
@@ -126,6 +129,12 @@ static int event_walk_op(struct k_thread *thread, void *data)
 		if (thread->evt_opts_and_flags & K_EVENT_OPTION_CLEAR) {
 			event_data->clear_events |= match;
 		}
+
+#ifdef CONFIG_SYS_CLOCK_EXISTS
+		z_abort_timeout(&thread->base.timeout);
+#endif /* CONFIG_SYS_CLOCK_EXISTS */
+
+#ifdef CONFIG_WAITQ_SCALABLE
 		thread->next_event_link = event_data->head;
 		event_data->head = thread;
 
@@ -136,9 +145,15 @@ static int event_walk_op(struct k_thread *thread, void *data)
 		 * have been processed.
 		 */
 		thread->evt_opts_and_flags |= K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT;
-#ifdef CONFIG_SYS_CLOCK_EXISTS
-		z_abort_timeout(&thread->base.timeout);
-#endif /* CONFIG_SYS_CLOCK_EXISTS */
+#else /* CONFIG_WAITQ_SCALABLE */
+		/*
+		 * Note: z_sched_wake_thread_locked() is safe
+		 * to call here because this walk_op callback
+		 * is invoked with _sched_spinlock held.
+		 */
+		arch_thread_return_value_set(thread, 0);
+		z_sched_wake_thread_locked(thread, false);
+#endif /* CONFIG_WAITQ_SCALABLE */
 	}
 
 	return 0;
@@ -148,11 +163,9 @@ static uint32_t k_event_post_internal(struct k_event *event, uint32_t events,
 				  uint32_t events_mask)
 {
 	k_spinlock_key_t  key;
-	struct k_thread  *thread;
 	struct event_walk_data data;
 	uint32_t previous_events;
 
-	data.head = NULL;
 	key = k_spin_lock(&event->lock);
 
 	SYS_PORT_TRACING_OBJ_FUNC_ENTER(k_event, post, event, events,
@@ -164,21 +177,27 @@ static uint32_t k_event_post_internal(struct k_event *event, uint32_t events,
 
 	/*
 	 * Posting an event has the potential to wake multiple pended threads.
-	 * It is desirable to unpend all affected threads simultaneously. This
-	 * is done in three steps:
+	 * It is desirable to unpend all affected threads simultaneously. When
+	 * z_sched_waitq_walk() allows removal of nodes from the wait queue,
+	 * we unpend and ready each thread as part of the callback. Otherwise,
+	 * proceed in three steps:
 	 *
 	 * 1. Walk the waitq and create a linked list of threads to unpend.
 	 * 2. Unpend each of the threads in the linked list
 	 * 3. Ready each of the threads in the linked list
 	 */
 
+#ifdef CONFIG_WAITQ_SCALABLE
+	data.head = NULL;
+#endif /* CONFIG_WAITQ_SCALABLE */
 	data.events = events;
 	data.clear_events = 0;
 	z_sched_waitq_walk(&event->wait_q, event_walk_op, &data);
 
+#ifdef CONFIG_WAITQ_SCALABLE
 	if (data.head != NULL) {
-		thread = data.head;
-		struct k_thread *next;
+		struct k_thread *thread = data.head, *next;
+
 		do {
 			arch_thread_return_value_set(thread, 0);
 			next = thread->next_event_link;
@@ -190,6 +209,7 @@ static uint32_t k_event_post_internal(struct k_event *event, uint32_t events,
 			thread = next;
 		} while (thread != NULL);
 	}
+#endif /* CONFIG_WAITQ_SCALABLE */
 
 	/* stash any events not consumed */
 	event->events = data.events & ~data.clear_events;
