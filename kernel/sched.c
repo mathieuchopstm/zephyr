@@ -622,33 +622,31 @@ void z_unpend_thread_no_timeout(struct k_thread *thread)
 	}
 }
 
-void z_sched_wake_thread(struct k_thread *thread, bool is_timeout)
+void z_sched_wake_thread_locked(struct k_thread *thread, bool is_timeout)
 {
-	K_SPINLOCK(&_sched_spinlock) {
-		bool killed = (thread->base.thread_state &
-				(_THREAD_DEAD | _THREAD_ABORTING));
+	/* No K_SPINLOCK: caller must hold _sched_spinlock when calling */
+	bool killed = (thread->base.thread_state &
+			(_THREAD_DEAD | _THREAD_ABORTING));
 
 #ifdef CONFIG_EVENTS
-		bool do_nothing = is_timeout &&
+	bool do_nothing = is_timeout &&
 			(thread->evt_opts_and_flags & K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT);
 
-		thread->evt_opts_and_flags &= ~K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT;
+	thread->evt_opts_and_flags &= ~K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT;
 
-		if (do_nothing) {
-			continue;
-		}
+	if (do_nothing) {
+		return;
+	}
 #endif /* CONFIG_EVENTS */
 
-		if (!killed) {
-			/* The thread is not being killed */
-			if (thread->base.pended_on != NULL) {
-				unpend_thread_no_timeout(thread);
-			}
-			z_mark_thread_as_not_sleeping(thread);
-			ready_thread(thread);
+	if (!killed) {
+		/* The thread is not being killed */
+		if (thread->base.pended_on != NULL) {
+			unpend_thread_no_timeout(thread);
 		}
+		z_mark_thread_as_not_sleeping(thread);
+		ready_thread(thread);
 	}
-
 }
 
 #ifdef CONFIG_SYS_CLOCK_EXISTS
@@ -658,7 +656,9 @@ void z_thread_timeout(struct _timeout *timeout)
 	struct k_thread *thread = CONTAINER_OF(timeout,
 					       struct k_thread, base.timeout);
 
-	z_sched_wake_thread(thread, true);
+	K_SPINLOCK(&_sched_spinlock) {
+		z_sched_wake_thread_locked(thread, true);
+	}
 }
 #endif /* CONFIG_SYS_CLOCK_EXISTS */
 
