@@ -1563,12 +1563,17 @@ int z_sched_wait(struct k_spinlock *lock, k_spinlock_key_t key,
 int z_sched_waitq_walk(_wait_q_t  *wait_q,
 		       int (*func)(struct k_thread *, void *), void *data)
 {
+	__maybe_unused struct k_thread *tmp;
 	struct k_thread *thread;
 	int  status = 0;
 
 	K_SPINLOCK(&_sched_spinlock) {
-		_WAIT_Q_FOR_EACH(wait_q, thread) {
-
+#ifndef CONFIG_WAITQ_SCALABLE
+		_WAIT_Q_FOR_EACH_SAFE(wait_q, thread, tmp)
+#else
+		_WAIT_Q_FOR_EACH(wait_q, thread)
+#endif /* CONFIG_WAITQ_SCALABLE */
+		{
 			/*
 			 * Invoke the callback function on each waiting thread
 			 * for as long as there are both waiting threads AND
