@@ -1560,8 +1560,8 @@ int z_sched_wait(struct k_spinlock *lock, k_spinlock_key_t key,
 	return ret;
 }
 
-int z_sched_waitq_walk(_wait_q_t  *wait_q,
-		       int (*func)(struct k_thread *, void *), void *data)
+int z_sched_waitq_walk(_wait_q_t *wait_q, _waitq_walk_cb_t walk_func,
+		       _waitq_walk_end_cb_t end_func, void *data)
 {
 	__maybe_unused struct k_thread *tmp;
 	struct k_thread *thread;
@@ -1580,10 +1580,14 @@ int z_sched_waitq_walk(_wait_q_t  *wait_q,
 			 * it returns 0.
 			 */
 
-			status = func(thread, data);
+			status = walk_func(thread, data);
 			if (status != 0) {
 				break;
 			}
+		}
+
+		if (end_func != NULL) {
+			end_func(status, data);
 		}
 	}
 
