@@ -106,6 +106,33 @@ static uint32_t are_wait_conditions_met(uint32_t desired, uint32_t current,
 	return match;
 }
 
+#ifdef CONFIG_WAITQ_SCALABLE
+static void event_post_walk_op(int status, void *data)
+{
+	/*
+	 * Note: z_sched_wake_thread_locked() is safe
+	 * to call here because this post_walk callback
+	 * is invoked with _sched_spinlock held.
+	 */
+	ARG_UNUSED(status);
+	struct event_walk_data *walk_data = data;
+
+	struct k_thread *thread = walk_data->head, *next;
+
+	while (thread != NULL) {
+		next = thread->next_event_link;
+
+		arch_thread_return_value_set(thread, 0);
+		z_sched_wake_thread_locked(thread);
+
+		thread = next;
+	}
+}
+#define EVENT_POST_WALK_OP_FN event_post_walk_op
+#else /*  CONFIG_WAITQ_SCALABLE */
+#define EVENT_POST_WALK_OP_FN NULL
+#endif /* CONFIG_WAITQ_SCALABLE */
+
 static int event_walk_op(struct k_thread *thread, void *data)
 {
 	uint32_t match;
@@ -130,6 +157,9 @@ static int event_walk_op(struct k_thread *thread, void *data)
 			event_data->clear_events |= match;
 		}
 
+		//TBC: since we wake up threads "atomically",
+		//     is this still required?
+		//     should it be moved to z_sched_wake_thread()?
 #ifdef CONFIG_SYS_CLOCK_EXISTS
 		z_abort_timeout(&thread->base.timeout);
 #endif /* CONFIG_SYS_CLOCK_EXISTS */
@@ -137,14 +167,6 @@ static int event_walk_op(struct k_thread *thread, void *data)
 #ifdef CONFIG_WAITQ_SCALABLE
 		thread->next_event_link = event_data->head;
 		event_data->head = thread;
-
-		/*
-		 * Events create a list of threads to wake up. We do
-		 * not want z_thread_timeout to wake these threads; they
-		 * will be woken up by k_event_post_internal once they
-		 * have been processed.
-		 */
-		thread->evt_opts_and_flags |= K_EVENT_FLAG_NO_WAKE_ON_TIMEOUT;
 #else /* CONFIG_WAITQ_SCALABLE */
 		/*
 		 * Note: z_sched_wake_thread_locked() is safe
@@ -152,7 +174,7 @@ static int event_walk_op(struct k_thread *thread, void *data)
 		 * is invoked with _sched_spinlock held.
 		 */
 		arch_thread_return_value_set(thread, 0);
-		z_sched_wake_thread_locked(thread, false);
+		z_sched_wake_thread_locked(thread);
 #endif /* CONFIG_WAITQ_SCALABLE */
 	}
 
@@ -192,24 +214,7 @@ static uint32_t k_event_post_internal(struct k_event *event, uint32_t events,
 #endif /* CONFIG_WAITQ_SCALABLE */
 	data.events = events;
 	data.clear_events = 0;
-	z_sched_waitq_walk(&event->wait_q, event_walk_op, NULL, &data);
-
-#ifdef CONFIG_WAITQ_SCALABLE
-	if (data.head != NULL) {
-		struct k_thread *thread = data.head, *next;
-
-		do {
-			arch_thread_return_value_set(thread, 0);
-			next = thread->next_event_link;
-
-			K_SPINLOCK(&_sched_spinlock) {
-				z_sched_wake_thread_locked(thread, false);
-			}
-
-			thread = next;
-		} while (thread != NULL);
-	}
-#endif /* CONFIG_WAITQ_SCALABLE */
+	z_sched_waitq_walk(&event->wait_q, event_walk_op, EVENT_POST_WALK_OP_FN, &data);
 
 	/* stash any events not consumed */
 	event->events = data.events & ~data.clear_events;
