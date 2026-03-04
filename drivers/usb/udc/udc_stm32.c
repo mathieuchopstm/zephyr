@@ -621,13 +621,19 @@ static void handle_msg_data_out(struct udc_stm32_data *priv, uint8_t epnum, uint
 	uint8_t ep = epnum | USB_EP_DIR_OUT;
 	struct net_buf *buf;
 
+	static uint32_t rx_pkt_cnt, rx_dropped_cnt;
+
+	rx_pkt_cnt++;
+
 	LOG_DBG("DataOut ep 0x%02x",  ep);
 
 	ep_cfg = udc_get_ep_cfg(dev, ep);
 
 	buf = udc_buf_peek(ep_cfg);
 	if (unlikely(buf == NULL)) {
-		LOG_ERR_RATELIMIT("ep 0x%02x queue is empty", ep);
+		rx_dropped_cnt++;
+		LOG_ERR_RATELIMIT("ep 0x%02x queue is empty (%u/%u|~%u%%)",
+			ep, rx_dropped_cnt, rx_pkt_cnt, rx_dropped_cnt * 100 / rx_pkt_cnt);
 		udc_ep_set_busy(ep_cfg, false);
 		return;
 	}
