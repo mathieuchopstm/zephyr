@@ -9,18 +9,24 @@
 #include <zephyr/drivers/i2s.h>
 #include <zephyr/sys/iterable_sections.h>
 
-#define SAMPLE_NO 64
+#define SAMPLE_NO (109 + 0)
 
-/* The data represent a sine wave */
-static int16_t data[SAMPLE_NO] = {
-	  3211,   6392,   9511,  12539,  15446,  18204,  20787,  23169,
-	 25329,  27244,  28897,  30272,  31356,  32137,  32609,  32767,
-	 32609,  32137,  31356,  30272,  28897,  27244,  25329,  23169,
-	 20787,  18204,  15446,  12539,   9511,   6392,   3211,      0,
-	 -3212,  -6393,  -9512, -12540, -15447, -18205, -20788, -23170,
-	-25330, -27245, -28898, -30273, -31357, -32138, -32610, -32767,
-	-32610, -32138, -31357, -30273, -28898, -27245, -25330, -23170,
-	-20788, -18205, -15447, -12540,  -9512,  -6393,  -3212,     -1,
+/* The data represent a sine wave (440 Hz when sampled @ 48 kHz) */
+static const int16_t data[SAMPLE_NO] = {
+         0,   1888,   3769,   5638,   7489,   9314,  11108,  12866,
+     14581,  16247,  17859,  19412,  20901,  22320,  23665,  24932,
+     26115,  27212,  28218,  29131,  29947,  30663,  31278,  31789,
+     32194,  32492,  32682,  32764,  32736,  32600,  32356,  32004,
+     31546,  30984,  30318,  29551,  28687,  27727,  26675,  25534,
+     24308,  23002,  21620,  20165,  18644,  17060,  15420,  13729,
+     11992,  10215,   8405,   6566,   4706,   2830,    944,   -944,
+     -2830,  -4706,  -6566,  -8405, -10215, -11992, -13729, -15420,
+    -17060, -18644, -20165, -21620, -23002, -24308, -25534, -26675,
+    -27727, -28687, -29551, -30318, -30984, -31546, -32004, -32356,
+    -32600, -32736, -32764, -32682, -32492, -32194, -31789, -31278,
+    -30663, -29947, -29131, -28218, -27212, -26115, -24932, -23665,
+    -22320, -20901, -19412, -17859, -16247, -14581, -12866, -11108,
+     -9314,  -7489,  -5638,  -3769,  -1888,
 };
 
 /* Fill buffer with sine wave on left channel, and sine wave shifted by
@@ -33,10 +39,11 @@ static void fill_buf(int16_t *tx_block, int att)
 
 	for (int i = 0; i < SAMPLE_NO; i++) {
 		/* Left channel is sine wave */
-		tx_block[2 * i] = data[i] / (1 << att);
+		tx_block[2 * i] = data[i] / (1u << 2);
 		/* Right channel is same sine wave, shifted by 90 degrees */
-		r_idx = (i + (ARRAY_SIZE(data) / 4)) % ARRAY_SIZE(data);
-		tx_block[2 * i + 1] = data[r_idx] / (1 << att);
+		tx_block[2 * i + 1] = tx_block[2 * i];
+//		r_idx = (i + (ARRAY_SIZE(data) / 4)) % ARRAY_SIZE(data);
+//		tx_block[2 * i + 1] = data[r_idx] / (1 << att);
 	}
 }
 
@@ -72,7 +79,7 @@ int main(void)
 	i2s_cfg.word_size = 16U;
 	i2s_cfg.channels = 2U;
 	i2s_cfg.format = I2S_FMT_DATA_FORMAT_I2S;
-	i2s_cfg.frame_clk_freq = 44100;
+	i2s_cfg.frame_clk_freq = 48000;
 	i2s_cfg.block_size = BLOCK_SIZE;
 	i2s_cfg.timeout = 2000;
 	/* Configure the Transmit port as Controller */
@@ -115,6 +122,10 @@ int main(void)
 		if (ret < 0) {
 			printf("Could not write TX buffer %d\n", tx_idx);
 			return ret;
+		}
+
+		if (tx_idx == NUM_BLOCKS) {
+			tx_idx = 0;
 		}
 	}
 	/* Drain TX queue */
