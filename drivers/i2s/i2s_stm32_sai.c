@@ -736,7 +736,9 @@ static int i2s_stm32_sai_write(const struct device *dev, void *mem_block, size_t
 	}
 
 	if (size > stream->i2s_cfg.block_size) {
-		LOG_ERR("Max write size is: %u", (unsigned int)stream->i2s_cfg.block_size);
+		LOG_ERR("Max write size is %u - cannot write %u!",
+			(unsigned int)stream->i2s_cfg.block_size,
+			(unsigned int)size);
 		return -EINVAL;
 	}
 
