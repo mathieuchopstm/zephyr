@@ -627,7 +627,7 @@ static void handle_msg_data_out(struct udc_stm32_data *priv, uint8_t epnum, uint
 
 	buf = udc_buf_peek(ep_cfg);
 	if (unlikely(buf == NULL)) {
-		LOG_ERR("ep 0x%02x queue is empty", ep);
+		LOG_ERR_RATELIMIT("ep 0x%02x queue is empty", ep);
 		udc_ep_set_busy(ep_cfg, false);
 		return;
 	}
