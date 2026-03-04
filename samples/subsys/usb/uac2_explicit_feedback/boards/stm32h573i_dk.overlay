@@ -1,0 +1,56 @@
+#include "../app.overlay"
+
+&clk_hsi {
+	status = "okay";
+};
+
+&pll2 {
+	/*
+	 * Use X-CUBE-AUDIO-KIT configuration: PLL2M = 32, PLL2N = 172, PLL2P = 7
+	 * - pll2_vco_in = hsi_ck / PLL2M = 64 MHz / 32 = 2 MHz
+	 * - pll2_vco_out = pll2_vco_in * PLL2N = 2 MHz * 172 = 344 MHz
+	 * - pll2_p_ck = pll2_vco_out / PLL2P = 344 MHz / 7 = ~49.143 MHz
+	 * - sai2_ker_ck = pll2_p_ck = ~49.143 MHz
+	 *
+	 * Valid for the following sampling frequencies:
+	 *	8 kHz, 16 kHz, 32 kHz, 48 kHz, 96 kHz
+	 *
+	 * Also apply PLL2Q/PLL2R configuration from X-CUBE-AUDIO-KIT
+	 * even though we don't use these outputs in this application.
+	 */
+	clocks = <&clk_hsi>;
+	div-m = <32>;
+	mul-n = <172>;
+	div-p = <7>;
+	div-q = <28>;
+	div-r = <28>;
+
+	status = "okay";
+};
+
+&gpdma1 {
+	status = "okay";
+};
+
+/* sai2_a is wired to codec (which is inited by a board hook) */
+i2s_tx: &sai2_a {
+	clocks = <&rcc STM32_CLOCK(APB2, 22)>,
+		 <&rcc STM32_SRC_PLL2_P SAI2_SEL(1)>;
+	pinctrl-0 = <&sai2_fs_a_pi7 &sai2_sck_a_pi5 &sai2_mclk_a_pi4 &sai2_sd_a_pi6>;
+	pinctrl-names = "default";
+	mclk-enable;
+	mclk-divider = "div-256";
+	dma-names = "tx";
+
+	status = "okay";
+};
+
+&i2c4 { /* Codec I2C */
+	status = "okay";
+};
+
+/* TBC: not necessary? */
+&sai2_fs_a_pi7 { slew-rate = "very-high-speed"; };
+&sai2_sck_a_pi5 { slew-rate = "very-high-speed"; };
+&sai2_mclk_a_pi4 { slew-rate = "very-high-speed"; };
+&sai2_sd_a_pi6 { slew-rate = "very-high-speed"; };
