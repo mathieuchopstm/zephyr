@@ -16,3 +16,6 @@ CONFIG_UART_CONSOLE=y
 
 # Enable GPIO
 CONFIG_GPIO=y
+
+# Enable I2C for codec
+CONFIG_I2C=y
