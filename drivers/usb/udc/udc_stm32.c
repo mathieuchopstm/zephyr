@@ -621,19 +621,27 @@ static void handle_msg_data_out(struct udc_stm32_data *priv, uint8_t epnum, uint
 	uint8_t ep = epnum | USB_EP_DIR_OUT;
 	struct net_buf *buf;
 
-	static uint32_t rx_pkt_cnt, rx_dropped_cnt;
-
-	rx_pkt_cnt++;
-
 	LOG_DBG("DataOut ep 0x%02x",  ep);
 
 	ep_cfg = udc_get_ep_cfg(dev, ep);
 
+	const bool iso_out_ep = (ep_cfg->attributes & USB_EP_TRANSFER_TYPE_MASK) == USB_EP_TYPE_ISO;
+	static uint32_t rx_iso_cnt, rx_iso_drop_cnt;
+
+	if (iso_out_ep) {
+		rx_iso_cnt++;
+	}
+
 	buf = udc_buf_peek(ep_cfg);
 	if (unlikely(buf == NULL)) {
-		rx_dropped_cnt++;
-		LOG_ERR_RATELIMIT("ep 0x%02x queue is empty (%u/%u|~%u%%)",
-			ep, rx_dropped_cnt, rx_pkt_cnt, rx_dropped_cnt * 100 / rx_pkt_cnt);
+		if (iso_out_ep) {
+			rx_iso_drop_cnt++;
+			LOG_WRN_RATELIMIT("dropped pkt on iso OUT ep 0x%02x (%u/%u|~%u%%)",
+				ep, rx_iso_drop_cnt, rx_iso_cnt, rx_iso_drop_cnt * 100 / rx_iso_cnt);
+		} else {
+			LOG_ERR("ep 0x%02x queue is empty", ep);
+		}
+
 		udc_ep_set_busy(ep_cfg, false);
 		return;
 	}
@@ -700,10 +708,11 @@ static void handle_msg_data_in(struct udc_stm32_data *priv, uint8_t epnum)
 	LOG_DBG("DataIn ep 0x%02x",  ep);
 
 	ep_cfg = udc_get_ep_cfg(dev, ep);
-	udc_ep_set_busy(ep_cfg, false);
 
 	buf = udc_buf_peek(ep_cfg);
 	if (unlikely(buf == NULL)) {
+		LOG_WRN("no buf for IN on ep 0x%02x", ep);
+		udc_ep_set_busy(ep_cfg, false);
 		return;
 	}
 
@@ -1351,6 +1360,9 @@ static int udc_stm32_ep_enqueue(const struct device *dev,
 			ret = udc_stm32_tx(dev, ep_cfg, buf);
 		}
 	} else {
+		if (ep_cfg->stat.halted) {
+			LOG_ERR("enqueue on halted OUT ep 0x%02x", ep_cfg->addr);
+		}
 		if (!udc_ep_is_busy(ep_cfg)) {
 			ret = udc_stm32_initiate_ep_rx(dev, ep_cfg, buf);
 		}
