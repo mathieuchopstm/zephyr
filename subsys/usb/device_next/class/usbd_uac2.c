@@ -378,7 +378,9 @@ static void schedule_iso_out_read(struct usbd_class_data *const c_data,
 	/* Prepare transfer to read audio OUT data from host */
 	data_buf = ctx->ops->get_recv_buf(dev, terminal, mps, ctx->user_data);
 	if (!data_buf) {
-		LOG_ERR_RATELIMIT("No data buffer for terminal %d", terminal);
+		//MCH: shush useless warning.
+		//Overruns/underruns are expected due to lack of feedback...
+		//LOG_ERR_RATELIMIT("No data buffer for terminal %d", terminal);
 		atomic_clear_bit(queued_bits, as_idx);
 		return;
 	}
