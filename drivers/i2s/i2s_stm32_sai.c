@@ -953,6 +953,13 @@ static DEVICE_API(i2s, i2s_stm32_driver_api) = {
 		.queue_drop = queue_drop,                                                          \
 	}
 
+// Diff Zephyr vs. X-CUBE-AUDIO-KIT:
+//				   Zephyr // CUBE
+//				----------------------
+// - .SlotInit.SlotActive	=     ALL // 0 | 1
+// - .Init.OutputDrive		= DISABLE // ENABLE
+// - .Init.FIFOThreshold	=    FULL // 1QF
+
 #define I2S_STM32_SAI_INIT(index)                                                                  \
                                                                                                    \
 	PINCTRL_DT_INST_DEFINE(index);                                                             \
