@@ -27,6 +27,107 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(udc_stm32, CONFIG_UDC_DRIVER_LOG_LEVEL);
 
+/* max. 1 msg per N ms at each LOG() call site, set to 0 to log everything */
+#define DEBUGGING_RATELIMIT 0
+
+/* controls whether TX/RX-related logs are enabled or no-op */
+#define DUMP_TX_ENABLE 0
+#define DUMP_RX_ENABLE 0
+
+static void dump_tx_info(const char *msg_header, PCD_HandleTypeDef *hpcd, uint32_t ep_addr)
+{
+	const uint32_t epnum = ep_addr & 0x7u; // Only 8 EPs supported by HW
+
+	if (!DUMP_TX_ENABLE)
+		return;
+
+	//ignore control EP traffic
+	if (epnum == 0)
+		return;
+
+	PCD_EPTypeDef *const ep = &hpcd->IN_ep[epnum];
+	const uint32_t sw_pma_addr = ep->pmaadress;
+	const uint32_t sw_pma_addr1 = ep->pmaaddr0;
+	const uint32_t sw_pma_addr2 = ep->pmaaddr1;
+
+	uint32_t hw_pma_addr;
+	uint32_t hw_tx_cnt;
+	bool valid_hw_pma;
+
+	if (ep->doublebuffer) {
+		const bool second_buf = !!(PCD_GET_ENDPOINT(hpcd->Instance, epnum) & USB_EP_DTOG_TX);
+		uint32_t bufdesc;
+
+		if (second_buf) {
+			bufdesc = (USB_DRD_PMA_BUFF + epnum)->TXBD;
+		} else {
+			bufdesc = (USB_DRD_PMA_BUFF + epnum)->RXBD;
+		}
+
+		hw_pma_addr = bufdesc & 0xFFFFu;
+		hw_tx_cnt = (bufdesc >> 16u) & 0x3FFu;
+
+		valid_hw_pma = (hw_pma_addr == sw_pma_addr1) || (hw_pma_addr == sw_pma_addr2);
+	} else {
+		hw_pma_addr = ((USB_DRD_PMA_BUFF + epnum)->TXBD & 0xFFFFu);
+		hw_tx_cnt = USB_DRD_GET_CHEP_TX_CNT(hpcd->Instance, epnum);
+
+		valid_hw_pma = (hw_pma_addr == sw_pma_addr);
+	}
+
+	uint32_t pma_first_word;
+
+	/* ensure we don't attempt bad reads from USB SRAM */
+	if (hw_pma_addr <= (2048 - sizeof(uint32_t))) {
+		pma_first_word = *(uint32_t*)(USB_DRD_PMAADDR + hw_pma_addr);
+	} else {
+		pma_first_word = 0x00D9DABA;
+	}
+
+	const uint8_t pma0 = pma_first_word & 0xFFu;
+	const uint8_t pma1 = (pma_first_word >> 8) & 0xFFu;
+	const uint8_t pma2 = (pma_first_word >> 16) & 0xFFu;
+
+	if (!valid_hw_pma) {
+		LOG_ERR_RATELIMIT_RATE(DEBUGGING_RATELIMIT, "%s: INCONSISTENT PMA! "
+		"ep %02x buf/len=%p/0x%X CNT_TX=0x%x pma_addr=0x%04x(hw)/0x%04x(sw-sb)/0x%04x|0x%04x(sw-db) dben=0x%X",
+		msg_header, ep_addr, (void *)ep->xfer_buff, ep->xfer_len,
+		hw_tx_cnt, hw_pma_addr, sw_pma_addr, sw_pma_addr1, sw_pma_addr2, ep->doublebuffer);
+	} else {
+		LOG_WRN_RATELIMIT_RATE(DEBUGGING_RATELIMIT, "%s: ep %02x buf/len=%p/0x%X CNT_TX=0x%x pma@0x%04x={%02X %02X %02X}",
+			msg_header, ep_addr, (void *)ep->xfer_buff, ep->xfer_len,
+			hw_tx_cnt, sw_pma_addr, pma0, pma1, pma2);
+	}
+}
+
+static void dump_rx_info(const struct device *dev, uint32_t epnum, uint32_t rx_count)
+{
+	if (!DUMP_RX_ENABLE)
+		return;
+
+	//ignore control EP traffic
+	if (epnum == 0)
+		return;
+
+	if (rx_count == 0) {
+		LOG_WRN_RATELIMIT("RX ep 0x%X count=0", epnum);
+	} else {
+		struct udc_ep_config *ep_cfg = udc_get_ep_cfg(dev, epnum | USB_EP_DIR_OUT);
+		struct net_buf *buf = udc_buf_peek(ep_cfg);
+
+		if (buf == NULL) {
+			LOG_WRN_RATELIMIT("RX 0x%X on ep 0x%02x no buf", rx_count, epnum);
+		} else if (rx_count < 4) {
+			LOG_WRN_RATELIMIT("RX 0x%X on ep 0x%02x len<4", rx_count, epnum);
+		} else {
+			const unsigned char *p = buf->data;
+			LOG_WRN_RATELIMIT_RATE(DEBUGGING_RATELIMIT,
+				"ep %02x RX 0x%X @ %p {%02X %02X %02X %02X ...}",
+				rx_count, epnum, (void *)p, p[0], p[1], p[2], p[3]);
+		}
+	}
+}
+
 /*
  * The STM32 HAL does not provide PCD_SPEED_HIGH and PCD_SPEED_HIGH_IN_FULL
  * on series which lack HS-capable hardware. Provide dummy definitions for
@@ -363,6 +464,20 @@ static int udc_stm32_tx(const struct device *dev, struct udc_ep_config *ep_cfg,
 	buf->data += len;
 	buf->len -= len;
 
+	if (ep_cfg->addr != USB_CONTROL_EP_IN && DUMP_TX_ENABLE) {
+		// LOG_HEXDUMP_WRN_RATELIMIT(data, len, "tx data");
+		if (len == 0x3) {
+			LOG_WRN_RATELIMIT_RATE(DEBUGGING_RATELIMIT,
+				"tx %p 0x%X: %02X %02X %02X",
+				(void *)data, len, data[0], data[1], data[2]);
+		} else {
+			LOG_ERR("unexpected TX 0x%08X\n", len);
+		}
+	}
+
+	/* prevent race with ISR (could result in invalid log order)*/
+	unsigned key = irq_lock();
+
 	status = HAL_PCD_EP_Transmit(&priv->pcd, ep_cfg->addr, data, len);
 	if (status != HAL_OK) {
 		LOG_ERR("HAL_PCD_EP_Transmit failed(0x%02x), %d", ep_cfg->addr, (int)status);
@@ -370,6 +485,10 @@ static int udc_stm32_tx(const struct device *dev, struct udc_ep_config *ep_cfg,
 	}
 
 	udc_ep_set_busy(ep_cfg, true);
+
+	dump_tx_info("After EP_Transmit", &priv->pcd, ep_cfg->addr);
+
+	irq_unlock(key);
 
 	if (ep_cfg->addr == USB_CONTROL_EP_IN && len > 0U) {
 		/* Wait for an empty package from the host.
@@ -500,6 +619,8 @@ void HAL_PCD_DataOutStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
 	};
 	int err;
 
+	dump_rx_info(priv->dev, epnum, rx_count);
+
 	err = k_msgq_put(&priv->msgq_data, &msg, K_NO_WAIT);
 	if (err != 0) {
 		LOG_ERR("UDC Message queue overrun");
@@ -619,6 +740,8 @@ void HAL_PCD_DataInStageCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
 	};
 	int err;
 
+	dump_tx_info("DataIn IRQ", hpcd, epnum);
+
 	err = k_msgq_put(&priv->msgq_data, &msg, K_NO_WAIT);
 	if (err != 0) {
 		LOG_ERR("UDC Message queue overrun");
@@ -636,6 +759,8 @@ static void handle_msg_data_in(struct udc_stm32_data *priv, uint8_t epnum)
 	LOG_DBG("DataIn ep 0x%02x",  ep);
 
 	ep_cfg = udc_get_ep_cfg(dev, ep);
+
+	dump_tx_info("data_in low IRQ", &priv->pcd, epnum);
 
 	buf = udc_buf_peek(ep_cfg);
 	if (unlikely(buf == NULL)) {
