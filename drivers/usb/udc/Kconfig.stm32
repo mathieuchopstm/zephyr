@@ -72,4 +72,59 @@ config UDC_STM32_OTG_RXFIFO_BASELINE_SIZE
 	  Refer to STM32 Reference Manuals for more details about the RxFIFO.
 endmenu
 
+menu "ST USB options"
+	depends on DT_HAS_ST_STM32_USB_ENABLED
+
+config UDC_STM32_STUSB_ISOCHRONOUS_SUPPORT
+	bool "Enable isochronous mode support"
+	help
+	  Enable support of isochronous mode endpoints on ST USB IP.
+	  (The ST USB IP corresponds to DT compatible "st,stm32-usb")
+
+	  When this option is disabled, isochronous endpoints are not supported.
+
+	  When this option is enabled:
+	   - the first UDC_STM32_STUSB_ISO_OUT_EP_NUM non-control endpoints are reserved
+	     for configuration in unidirectional isochronous OUT mode (no other mode allowed)
+
+	   - the next UDC_STM32_STUSB_ISO_IN_EP_NUM non-control endpoints are reserved
+	     for configuration in unidirectional isochronous IN mode (no other mode allowed)
+
+	   - all remaining non-control endpoints can be configured in bulk/interrupt mode
+	     (no constraint on )
+
+	  For example, if UDC_STM32_STUSB_ISO_OUT_EP_NUM=1 and UDC_STM32_STUSB_ISO_IN_EP_NUM=1:
+	    - (EP0 OUT/IN is reserved for control transfers)
+	    - EP1 OUT is reserved for isochronous mode
+	    - EP1 IN is reserved and cannot be used
+
+	    - EP2 OUT is reserved and cannot be used
+	    - EP2 IN is reserved for isochronous mode
+
+	    - EP3~EPn OUT/IN can be used freely in bulk/interrupt mode
+
+	  Warning: (UDC_STM32_STUSB_ISO_OUT_EP_NUM + UDC_STM32_STUSB_ISO_IN_EP_NUM) must
+	  not exceed the value of `num-bidir-endpoints` property or a build error occurs.
+
+if UDC_STM32_STUSB_ISOCHRONOUS_SUPPORT
+
+config UDC_STM32_STUSB_ISO_OUT_EP_NUM
+	int "Number of endpoints reserved for isochronous OUT"
+	default 0
+	range 0 $(UINT8_MAX)
+	help
+	  Number of endpoints reserved for OUT isochronous mode operation
+	  (Refer to UDC_STM32_STUSB_ISOCHRONOUS_SUPPORT for more details)
+
+config UDC_STM32_STUSB_ISO_IN_EP_NUM
+	int "Number of endpoints reserved for isochronous IN"
+	default 0
+	range 0 $(UINT8_MAX)
+	help
+	  Number of endpoints reserved for IN isochronous mode operation
+	  (Refer to UDC_STM32_STUSB_ISOCHRONOUS_SUPPORT for more details)
+
+endif # UDC_STM32_STUSB_ISOCHRONOUS_SUPPORT
+endmenu
+
 endif
