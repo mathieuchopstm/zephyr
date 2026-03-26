@@ -6,6 +6,12 @@
 
 if CPU_HAS_MPU
 
+config ARM_MPU_HACK_RECONFIGURE_STATIC_REGIONS
+	bool "[HACK] Reconfigure static regions upon dynamic reconfiguration"
+	help
+	  When enabled, save RLAR+RBAR of static regions and forcefully
+	  reapply them whenever a dynamic reconfiguration occurs
+
 config ARM_MPU_REGION_MIN_ALIGN_AND_SIZE
 	int
 	default 256 if ARM_MPU && ARMV6_M_ARMV8_M_BASELINE && !ARMV8_M_BASELINE

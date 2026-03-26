@@ -25,6 +25,13 @@ struct dynamic_region_info {
 	struct arm_mpu_region region_conf;
 };
 
+#ifdef CONFIG_ARM_MPU_HACK_RECONFIGURE_STATIC_REGIONS
+static struct {
+	uint32_t rbar;
+	uint32_t rlar;
+} STATIC_MPU_REGIONS[32];
+#endif /* CONFIG_ARM_MPU_HACK_RECONFIGURE_STATIC_REGIONS */
+
 /**
  * Global array, holding the MPU region index of
  * the memory region inside which dynamic memory
@@ -682,6 +689,14 @@ static int mpu_configure_static_mpu_regions(const struct z_arm_mpu_partition
 	mpu_reg_index = mpu_configure_regions_and_partition(static_regions,
 		regions_num, mpu_reg_index, true);
 
+#ifdef CONFIG_ARM_MPU_HACK_RECONFIGURE_STATIC_REGIONS
+	for (uint8_t i = 0; i < static_regions_num; i++) {
+		mpu_set_rnr(i);
+		STATIC_MPU_REGIONS[i].rbar = mpu_get_rbar();
+		STATIC_MPU_REGIONS[i].rlar = mpu_get_rlar();
+	}
+#endif /* CONFIG_ARM_MPU_HACK_RECONFIGURE_STATIC_REGIONS */
+
 	static_regions_num = mpu_reg_index;
 
 	return mpu_reg_index;
@@ -753,6 +768,16 @@ static int mpu_configure_dynamic_mpu_regions(const struct z_arm_mpu_partition
 	for (int i = mpu_reg_index; i < get_num_regions(); i++) {
 		mpu_clear_region(i);
 	}
+
+#ifdef CONFIG_ARM_MPU_HACK_RECONFIGURE_STATIC_REGIONS
+	//HACK: forcefully reconfigure static regions
+	//      to their "proper" value
+	for (uint8_t i = 0; i < static_regions_num; i++) {
+		mpu_set_rnr(i);
+		mpu_set_rbar(STATIC_MPU_REGIONS[i].rbar);
+		mpu_set_rlar(STATIC_MPU_REGIONS[i].rlar);
+	}
+#endif /* CONFIG_ARM_MPU_HACK_RECONFIGURE_STATIC_REGIONS */
 
 #if defined(CONFIG_MPU_GAP_FILLING)
 	/* Reset MPU regions inside which dynamic memory regions may
