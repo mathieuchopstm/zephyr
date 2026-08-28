@@ -122,13 +122,13 @@ static int event_handler_bus_reset(struct usbd_context *const uds_ctx)
 	usbd_status_suspended(uds_ctx, false);
 	ret = udc_set_address(uds_ctx->dev, 0);
 	if (ret) {
-		LOG_ERR("Failed to set default address after bus reset");
+		LOG_ERR("Failed to set default address after bus reset: %d", ret);
 		return ret;
 	}
 
 	ret = usbd_config_set(uds_ctx, 0);
 	if (ret) {
-		LOG_ERR("Failed to set default state after bus reset");
+		LOG_ERR("Failed to set default state after bus reset: %d", ret);
 		return ret;
 	}
 

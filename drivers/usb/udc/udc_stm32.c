@@ -178,6 +178,7 @@ struct udc_stm32_data  {
 	uint32_t ep0_out_wlength;
 	struct k_thread thread_data;
 	struct k_msgq msgq_data;
+	bool reset_pending;
 	char msgq_buf[CONFIG_UDC_STM32_MAX_QMESSAGES * sizeof(struct udc_stm32_msg)];
 };
 
@@ -349,6 +350,21 @@ void HAL_PCD_ResetCallback(stm32_pcd_handle_t *hpcd)
 	struct udc_ep_config *ep_cfg;
 	stm32_status_t __maybe_unused status;
 
+	LOG_DBG("%s", __func__);
+
+	if (!udc_is_enabled(dev)) {
+		const struct udc_data *data = dev->data;
+		(void)data; /* Silence unused warning */
+
+		__ASSERT(data->caps.can_detect_vbus,
+			"Controller should be enabled upon RESET event "
+			"when VBUS detection is not supported");
+
+		LOG_DBG("Buffering RESET event until controller is enabled");
+		priv->reset_pending = true;
+		return;
+	}
+
 	/* Re-Enable control endpoints */
 	ep_cfg = udc_get_ep_cfg(dev, USB_CONTROL_EP_OUT);
 	if (ep_cfg != NULL && ep_cfg->stat.enabled) {
@@ -374,12 +390,19 @@ void HAL_PCD_ConnectCallback(stm32_pcd_handle_t *hpcd)
 {
 	struct udc_stm32_data *priv = hpcd2data(hpcd);
 
+	LOG_DBG("%s", __func__);
+
 	udc_submit_event(priv->dev, UDC_EVT_VBUS_READY, 0);
 }
 
 void HAL_PCD_DisconnectCallback(stm32_pcd_handle_t *hpcd)
 {
 	struct udc_stm32_data *priv = hpcd2data(hpcd);
+
+	LOG_DBG("%s", __func__);
+
+	/* Invalidate pending reset event, if any */
+	priv->reset_pending = false;
 
 	udc_submit_event(priv->dev, UDC_EVT_VBUS_REMOVED, 0);
 }
@@ -388,6 +411,8 @@ void HAL_PCD_SuspendCallback(stm32_pcd_handle_t *hpcd)
 {
 	struct udc_stm32_data *priv = hpcd2data(hpcd);
 
+	LOG_DBG("%s", __func__);
+
 	udc_set_suspended(priv->dev, true);
 	udc_submit_event(priv->dev, UDC_EVT_SUSPEND, 0);
 }
@@ -395,6 +420,8 @@ void HAL_PCD_SuspendCallback(stm32_pcd_handle_t *hpcd)
 void HAL_PCD_ResumeCallback(stm32_pcd_handle_t *hpcd)
 {
 	struct udc_stm32_data *priv = hpcd2data(hpcd);
+
+	LOG_DBG("%s", __func__);
 
 	udc_set_suspended(priv->dev, false);
 	udc_submit_event(priv->dev, UDC_EVT_RESUME, 0);
@@ -411,6 +438,8 @@ void HAL_PCDEx_SetConnectionState(stm32_pcd_handle_t *hpcd, uint8_t state)
 {
 	struct udc_stm32_data *priv = hpcd2data(hpcd);
 	const struct udc_stm32_config *cfg = priv->dev->config;
+
+	LOG_DBG("%s", __func__);
 
 #if defined(CONFIG_SOC_SERIES_STM32L1X)
 	/* On STM32L1 series, the USB D+ pull-up is controlled by software. */
@@ -1061,6 +1090,8 @@ int udc_stm32_init(const struct device *dev)
 	stm32_status_t status;
 	int err;
 
+	LOG_DBG("%s", __func__);
+
 	err = stm32_usb_pwr_enable();
 	if (err != 0) {
 		LOG_ERR("Error enabling USB power: %d", err);
@@ -1088,6 +1119,7 @@ int udc_stm32_init(const struct device *dev)
 
 	pcd_cfg.pcd_speed = cfg->selected_speed;
 	pcd_cfg.phy_interface = cfg->selected_phy;
+	pcd_cfg.vbus_sensing_enable = HAL_PCD_VBUS_SENSE_ENABLED;
 	pcd_cfg.sof_enable = IS_ENABLED(CONFIG_UDC_ENABLE_SOF);
 	status = HAL_PCD_SetConfig(&priv->pcd, &pcd_cfg);
 	if (status != HAL_OK) {
@@ -1101,6 +1133,7 @@ int udc_stm32_init(const struct device *dev)
 	priv->pcd.Init.phy_itface = cfg->selected_phy;
 	priv->pcd.Init.speed = cfg->selected_speed;
 	priv->pcd.Init.Sof_enable = IS_ENABLED(CONFIG_UDC_ENABLE_SOF);
+	priv->pcd.Init.vbus_sensing_enable = 1;
 
 	status = HAL_PCD_Init(&priv->pcd);
 	if (status != HAL_OK) {
@@ -1109,9 +1142,15 @@ int udc_stm32_init(const struct device *dev)
 	}
 #endif /* CONFIG_STM32_HAL2 */
 
-	if (HAL_PCD_Stop(&priv->pcd) != HAL_OK) {
+	/*
+	 * HAL_PCD_Start() enables IRQs at OTG level (GAHBCFG.GINT=1)
+	 * irq_enable() allows IRQs at NVIC level.
+	 */
+	if (HAL_PCD_Start(&priv->pcd) != HAL_OK) {
 		return -EIO;
 	}
+
+	irq_enable(cfg->irqn);
 
 	return 0;
 }
@@ -1119,19 +1158,12 @@ int udc_stm32_init(const struct device *dev)
 static int udc_stm32_enable(const struct device *dev)
 {
 	struct udc_stm32_data *priv = udc_get_private(dev);
-	const struct udc_stm32_config *cfg = dev->config;
-	stm32_status_t status;
+//	stm32_status_t status;
 	int ret;
 
 	LOG_DBG("Enable UDC");
 
 	udc_stm32_mem_init(dev);
-
-	status = HAL_PCD_Start(&priv->pcd);
-	if (status != HAL_OK) {
-		LOG_ERR("PCD_Start failed, %d", (int)status);
-		return -EIO;
-	}
 
 	ret = udc_ep_enable_internal(dev, USB_CONTROL_EP_OUT,
 				     USB_EP_TYPE_CONTROL,
@@ -1149,7 +1181,14 @@ static int udc_stm32_enable(const struct device *dev)
 		return ret;
 	}
 
-	irq_enable(cfg->irqn);
+	if (priv->reset_pending) {
+		/*
+		 * RESET event occurred but could not be dispatched.
+		 * Submit it to the stack now.
+		 */
+		priv->reset_pending = false;
+		udc_submit_event(dev, UDC_EVT_RESET, 0);
+	}
 
 	return 0;
 }
@@ -1157,10 +1196,10 @@ static int udc_stm32_enable(const struct device *dev)
 static int udc_stm32_disable(const struct device *dev)
 {
 	struct udc_stm32_data *priv = udc_get_private(dev);
-	const struct udc_stm32_config *cfg = dev->config;
+//	const struct udc_stm32_config *cfg = dev->config;
 	stm32_status_t status;
 
-	irq_disable(cfg->irqn);
+	LOG_DBG("%s", __func__);
 
 	if (udc_ep_disable_internal(dev, USB_CONTROL_EP_OUT) != 0) {
 		LOG_ERR("Failed to disable control endpoint");
@@ -1178,6 +1217,16 @@ static int udc_stm32_disable(const struct device *dev)
 		return -EIO;
 	}
 
+	/*
+	 * After HAL_PCD_Stop() which """clears the USB context""",
+	 * re-enable interrupts via HAL_PCD_Start().
+	 */
+	status = HAL_PCD_Start(&priv->pcd);
+	if (status != HAL_OK) {
+		LOG_ERR("PCD_Start failed, %d", (int)status);
+		return -EIO;
+	}
+
 	return 0;
 }
 
@@ -1186,6 +1235,8 @@ static int udc_stm32_shutdown(const struct device *dev)
 	struct udc_stm32_data *priv = udc_get_private(dev);
 	const struct udc_stm32_config *cfg = dev->config;
 	int err;
+
+	LOG_DBG("%s", __func__);
 
 #ifdef CONFIG_STM32_HAL2
 	HAL_PCD_DeInit(&priv->pcd);
@@ -1518,11 +1569,14 @@ static int udc_stm32_driver_preinit(const struct device *dev)
 	}
 
 	data->caps.rwup = true;
+	data->caps.can_detect_vbus = !DT_HAS_COMPAT_STATUS_OKAY(st_stm32_usb);
 	data->caps.addr_before_status = true;
 	data->caps.mps0 = UDC_MPS0_64;
 	if (cfg->selected_speed == PCD_SPEED_HIGH) {
 		data->caps.hs = true;
 	}
+
+	LOG_DBG("VBUS sensing is %s", data->caps.can_detect_vbus ? "enabled" : "disabled");
 
 	priv->dev = dev;
 
