@@ -148,7 +148,7 @@
 		};
 
 		sdmmc2: sdmmc@40011c00 {
-			compatible = "st,stm32-sdmmc";
+			compatible = "st,stm32f1-sdmmc", "st,stm32-sdmmc";
 			reg = <0x40011c00 0x400>;
 			clocks = <&rcc STM32_CLOCK(APB2, 7)>,
 				 <&rcc STM32_SRC_PLL_Q SDMMC2_SEL(0)>;

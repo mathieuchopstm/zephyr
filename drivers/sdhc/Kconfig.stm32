@@ -24,6 +24,7 @@ config SDHC_BUFFER_ALIGNMENT
 config SDHC_STM32_DMA_MODE
 	bool "Use DMA mode for data transfers"
 	select CACHE_MANAGEMENT if DCACHE
+	depends on $(dt_compat_all_has_prop,$(DT_COMPAT_ST_STM32_SDMMC),idma,True)
 	default y
 	help
 	  Enable DMA for data transfers. Disable to use polling mode.

@@ -29,6 +29,123 @@ typedef void (*irq_config_func_t)(void);
 
 BUILD_ASSERT((CONFIG_SDHC_BUFFER_ALIGNMENT % sizeof(uint32_t)) == 0U);
 
+#if defined(SDIO)
+/* Structures */
+#define SDMMC_TypeDef SDIO_TypeDef
+#define SDMMC_InitTypeDef SDIO_InitTypeDef
+#define SDMMC_CmdInitTypeDef SDIO_CmdInitTypeDef
+#define SDMMC_DataInitTypeDef SDIO_DataInitTypeDef
+
+/* Functions */
+#define SDMMC_Init SDIO_Init
+#define SDMMC_SendCommand SDIO_SendCommand
+#define SDMMC_ConfigData SDIO_ConfigData
+#define SDMMC_GetResponse SDIO_GetResponse
+#define SDMMC_ReadFIFO SDIO_ReadFIFO
+#define SDMMC_WriteFIFO SDIO_WriteFIFO
+#define SDMMC_PowerState_ON SDIO_PowerState_ON
+#define SDMMC_PowerState_OFF SDIO_PowerState_OFF
+
+/* Function-like macros */
+#define __SDMMC_ENABLE_IT __SDIO_ENABLE_IT
+#define __SDMMC_DISABLE_IT __SDIO_DISABLE_IT
+#define __SDMMC_GET_FLAG __SDIO_GET_FLAG
+#define __SDMMC_CLEAR_FLAG __SDIO_CLEAR_FLAG
+
+/* Macros */
+#define SDMMC_CLOCK_EDGE_FALLING SDIO_CLOCK_EDGE_FALLING
+#define SDMMC_CLOCK_POWER_SAVE_DISABLE SDIO_CLOCK_POWER_SAVE_DISABLE
+#define SDMMC_HARDWARE_FLOW_CONTROL_ENABLE SDIO_HARDWARE_FLOW_CONTROL_ENABLE
+#define SDMMC_HARDWARE_FLOW_CONTROL_DISABLE SDIO_HARDWARE_FLOW_CONTROL_DISABLE
+#define SDMMC_RESPONSE_NO SDIO_RESPONSE_NO
+#define SDMMC_RESPONSE_SHORT SDIO_RESPONSE_SHORT
+#define SDMMC_RESPONSE_LONG SDIO_RESPONSE_LONG
+#define SDMMC_WAIT_NO SDIO_WAIT_NO
+#define SDMMC_CPSM_ENABLE SDIO_CPSM_ENABLE
+#define SDMMC_RESP1 SDIO_RESP1
+#define SDMMC_RESP2 SDIO_RESP2
+#define SDMMC_RESP3 SDIO_RESP3
+#define SDMMC_RESP4 SDIO_RESP4
+
+#define SDMMC_BUS_WIDE_1B SDIO_BUS_WIDE_1B
+#define SDMMC_BUS_WIDE_4B SDIO_BUS_WIDE_4B
+#define SDMMC_BUS_WIDE_8B SDIO_BUS_WIDE_8B
+#define SDMMC_DATABLOCK_SIZE_1B SDIO_DATABLOCK_SIZE_1B
+#define SDMMC_DATABLOCK_SIZE_8B SDIO_DATABLOCK_SIZE_8B
+#define SDMMC_DATABLOCK_SIZE_64B SDIO_DATABLOCK_SIZE_64B
+#define SDMMC_DATABLOCK_SIZE_512B SDIO_DATABLOCK_SIZE_512B
+#define SDMMC_TRANSFER_DIR_TO_CARD SDIO_TRANSFER_DIR_TO_CARD
+#define SDMMC_TRANSFER_DIR_TO_SDMMC SDIO_TRANSFER_DIR_TO_SDIO
+#define SDMMC_TRANSFER_MODE_BLOCK SDIO_TRANSFER_MODE_BLOCK
+#define SDMMC_TRANSFER_MODE_SDIO SDIO_TRANSFER_MODE_STREAM
+#define SDMMC_DPSM_DISABLE SDIO_DPSM_DISABLE
+#define SDMMC_DPSM_ENABLE SDIO_DPSM_ENABLE
+
+#define SDMMC_IT_DCRCFAIL SDIO_IT_DCRCFAIL
+#define SDMMC_IT_DTIMEOUT SDIO_IT_DTIMEOUT
+#define SDMMC_IT_TXUNDERR SDIO_IT_TXUNDERR
+#define SDMMC_IT_RXOVERR SDIO_IT_RXOVERR
+#define SDMMC_IT_DATAEND SDIO_IT_DATAEND
+#define SDMMC_IT_TXFIFOHE SDIO_IT_TXFIFOHE
+#define SDMMC_IT_RXFIFOHF SDIO_IT_RXFIFOHF
+#define SDMMC_IT_IDMABTC 0U
+
+#define SDMMC_FLAG_BUSYD0END 0U
+#define SDMMC_FLAG_CCRCFAIL SDIO_FLAG_CCRCFAIL
+#define SDMMC_FLAG_CMDACT SDIO_FLAG_CMDACT
+#define SDMMC_FLAG_CMDREND SDIO_FLAG_CMDREND
+#define SDMMC_FLAG_CMDSENT SDIO_FLAG_CMDSENT
+#define SDMMC_FLAG_CTIMEOUT SDIO_FLAG_CTIMEOUT
+#define SDMMC_FLAG_DABORT 0U
+#define SDMMC_FLAG_DATAEND SDIO_FLAG_DATAEND
+#define SDMMC_FLAG_DBCKEND SDIO_FLAG_DBCKEND
+#define SDMMC_FLAG_DCRCFAIL SDIO_FLAG_DCRCFAIL
+#define SDMMC_FLAG_DTIMEOUT SDIO_FLAG_DTIMEOUT
+#define SDMMC_FLAG_IDMABTC 0U
+#define SDMMC_FLAG_RXFIFOE SDIO_FLAG_RXFIFOE
+#define SDMMC_FLAG_RXFIFOHF SDIO_FLAG_RXFIFOHF
+#define SDMMC_FLAG_RXOVERR SDIO_FLAG_RXOVERR
+#define SDMMC_FLAG_TXFIFOE SDIO_FLAG_TXFIFOE
+#define SDMMC_FLAG_TXFIFOHE SDIO_FLAG_TXFIFOHE
+#define SDMMC_FLAG_TXUNDERR SDIO_FLAG_TXUNDERR
+
+#define SDMMC_STATIC_FLAGS SDIO_STATIC_FLAGS
+#define SDMMC_STATIC_CMD_FLAGS SDIO_STATIC_CMD_FLAGS
+#define SDMMC_STATIC_DATA_FLAGS SDIO_STATIC_DATA_FLAGS
+
+#define SDMMC_DCTRL_SDIOEN SDIO_DCTRL_SDIOEN
+#define SDMMC_DCTRL_DBLOCKSIZE_Pos SDIO_DCTRL_DBLOCKSIZE_Pos
+#define SDMMC_DCTRL_FIFORST 0U
+#define SDMMC_CLKCR_CLKDIV SDIO_CLKCR_CLKDIV
+#define SDMMC_CLKCR_WIDBUS SDIO_CLKCR_WIDBUS
+#define SDMMC_POWER_VSWITCHEN 0U
+
+#define SDMMC_STA_DCRCFAIL SDIO_STA_DCRCFAIL
+#define SDMMC_STA_DTIMEOUT SDIO_STA_DTIMEOUT
+#define SDMMC_STA_TXUNDERR SDIO_STA_TXUNDERR
+#define SDMMC_STA_RXOVERR SDIO_STA_RXOVERR
+#define SDMMC_ICR_DCRCFAILC SDIO_ICR_DCRCFAILC
+#define SDMMC_ICR_DTIMEOUTC SDIO_ICR_DTIMEOUTC
+#define SDMMC_ICR_TXUNDERRC SDIO_ICR_TXUNDERRC
+#define SDMMC_ICR_RXOVERRC SDIO_ICR_RXOVERRC
+
+#define SDMMC_SDIO_R5_OUT_OF_RANGE BIT(8)
+#define SDMMC_SDIO_R5_INVALID_FUNCTION_NUMBER (BIT(12) | BIT(11) | BIT(10) | BIT(9))
+#define SDMMC_SDIO_R5_COM_CRC_FAILED BIT(15)
+#define SDMMC_SDIO_R5_ILLEGAL_CMD BIT(14)
+#define SDMMC_SDIO_R5_ERRORBITS                                                        \
+	(SDMMC_SDIO_R5_OUT_OF_RANGE | SDMMC_SDIO_R5_INVALID_FUNCTION_NUMBER |             \
+	 SDMMC_SDIO_R5_COM_CRC_FAILED | SDMMC_SDIO_R5_ILLEGAL_CMD)
+
+#define __SDMMC_CMDTRANS_ENABLE(instance) do { } while (0)
+#define __SDMMC_CMDTRANS_DISABLE(instance) do { } while (0)
+#endif /* defined(SDIO) */
+
+#if defined(SDIO) || !defined(SDMMC_FIFO_SIZE)
+/* Fallback for SDIO series and STM32F7/L4 which lack this define */
+#define SDMMC_FIFO_SIZE 32U
+#endif /* defined(SDIO) || !defined(SDMMC_FIFO_SIZE) */
+
 #define SDIO_OCR_SDIO_S18R BIT(24) /* SDIO OCR bit indicating support for 1.8V switching */
 
 /* Set IDMA buffer address: adapts to series with IDMABASER vs IDMABASE0 */
@@ -76,7 +193,9 @@ struct sdhc_stm32_data {
 	struct sdhc_io host_io;        /* Input/Output host configuration */
 	struct sdhc_host_props props;  /* current host properties */
 	struct k_sem device_sync_sem;  /* Sync between device communication messages */
+#ifdef CONFIG_SDHC_STM32_DMA_MODE
 	void *sdio_dma_buf;            /* DMA buffer for SDIO/SDMMC data transfer */
+#endif /* CONFIG_SDHC_STM32_DMA_MODE */
 	uint32_t total_transfer_bytes; /* number of bytes transferred */
 	uint32_t sdmmc_clk;            /* Specifies the clock*/
 	uint32_t block_size;           /* Block size for SDMMC data transfer */
@@ -305,6 +424,7 @@ static int sdhc_stm32_activate(const struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_SDHC_STM32_DMA_MODE
 static void sdhc_stm32_disable_data_interrupts(SDMMC_TypeDef *instance)
 {
 	__SDMMC_DISABLE_IT(instance, SDMMC_IT_DATAEND | SDMMC_IT_DCRCFAIL | SDMMC_IT_DTIMEOUT |
@@ -343,6 +463,7 @@ static void sdhc_stm32_abort_dma_transfer(SDMMC_TypeDef *instance, struct sdhc_s
 	__SDMMC_CLEAR_FLAG(instance, SDMMC_FLAG_IDMABTC);
 	__SDMMC_CLEAR_FLAG(instance, SDMMC_STATIC_DATA_FLAGS);
 }
+#endif /* CONFIG_SDHC_STM32_DMA_MODE */
 
 static uint32_t sdhc_stm32_convert_block_size(struct sdhc_stm32_data *dev_data)
 {
@@ -807,6 +928,7 @@ static int sdhc_stm32_rw_blocks_poll(struct sdhc_stm32_data *dev_data, struct sd
 	return 0;
 }
 
+#ifdef CONFIG_SDHC_STM32_DMA_MODE
 static int sdhc_stm32_rw_blocks_dma(struct sdhc_command *cmd, SDMMC_TypeDef *instance,
 				    const uint8_t *p_data, uint32_t number_of_blocks,
 				    struct sdhc_stm32_data *dev_data, bool is_write)
@@ -867,6 +989,7 @@ static int sdhc_stm32_rw_blocks_dma(struct sdhc_command *cmd, SDMMC_TypeDef *ins
 
 	return 0;
 }
+#endif /* CONFIG_SDHC_STM32_DMA_MODE */
 
 static int sdhc_stm32_rw_blocks(struct sdhc_command *cmd, const struct device *dev,
 				struct sdhc_data *data, bool is_write)
@@ -875,17 +998,15 @@ static int sdhc_stm32_rw_blocks(struct sdhc_command *cmd, const struct device *d
 	struct sdhc_stm32_data *dev_data = dev->data;
 	SDMMC_TypeDef *instance = sdhc_stm32_get_instance(dev);
 
-	if (IS_ENABLED(CONFIG_SDHC_STM32_DMA_MODE)) {
-		sys_cache_data_flush_range(data->data, data->blocks * data->block_size);
+#ifndef CONFIG_SDHC_STM32_DMA_MODE
+	ret = sdhc_stm32_rw_blocks_poll(dev_data, cmd, instance, data->data, data->blocks,
+					data->timeout_ms, is_write);
+#else /* !CONFIG_SDHC_STM32_DMA_MODE */
+	sys_cache_data_flush_range(data->data, data->blocks * data->block_size);
 
-		ret = sdhc_stm32_rw_blocks_dma(cmd, instance, data->data, data->blocks, dev_data,
-					       is_write);
-	} else {
-		ret = sdhc_stm32_rw_blocks_poll(dev_data, cmd, instance, data->data, data->blocks,
-						data->timeout_ms, is_write);
-	}
-
-	if (IS_ENABLED(CONFIG_SDHC_STM32_DMA_MODE) && ret == 0) {
+	ret = sdhc_stm32_rw_blocks_dma(cmd, instance, data->data, data->blocks, dev_data,
+					is_write);
+	if (ret == 0) {
 		if (k_sem_take(&dev_data->device_sync_sem, K_MSEC(data->timeout_ms)) != 0) {
 			dev_data->error_code |= SDMMC_ERROR_TIMEOUT;
 			sdhc_stm32_abort_dma_transfer(instance, dev_data);
@@ -897,6 +1018,7 @@ static int sdhc_stm32_rw_blocks(struct sdhc_command *cmd, const struct device *d
 			sys_cache_data_invd_range(data->data, data->blocks * data->block_size);
 		}
 	}
+#endif /* !CONFIG_SDHC_STM32_DMA_MODE */
 
 	return ret;
 }
@@ -1150,6 +1272,8 @@ static int sdhc_stm32_find_scr(struct sdhc_command *cmd, SDMMC_TypeDef *instance
 	return 0;
 }
 
+#ifdef CONFIG_SDHC_STM32_DMA_MODE
+/* The IRQ handler is used only in DMA mode (otherwise, we are polling) */
 void sdhc_stm32_irq_handler(SDMMC_TypeDef *instance, struct sdhc_stm32_data *dev_data)
 {
 	uint32_t errorcode = __SDMMC_GET_FLAG(instance, SDMMC_DATA_ERROR_FLAGS);
@@ -1211,6 +1335,7 @@ void sdhc_stm32_irq_handler(SDMMC_TypeDef *instance, struct sdhc_stm32_data *dev
 	/* Clear IDMA buffer transfer complete interrupt flag */
 	__SDMMC_CLEAR_FLAG(instance, SDMMC_FLAG_IDMABTC);
 }
+#endif /* CONFIG_SDHC_STM32_DMA_MODE */
 
 static int sdhc_stm32_sdio_rw_direct(struct sdhc_stm32_data *dev_data, SDMMC_TypeDef *instance,
 			      struct sdhc_command *cmd)
@@ -1323,6 +1448,7 @@ static int sdhc_stm32_sdio_rw_extended_poll(struct sdhc_command *cmd, SDMMC_Type
 	return 0;
 }
 
+#ifdef CONFIG_SDHC_STM32_DMA_MODE
 static int sdhc_stm32_sdio_rw_extended_dma(struct sdhc_command *cmd, SDMMC_TypeDef *instance,
 					   bool is_block_mode, struct sdhc_stm32_data *dev_data,
 					   bool is_write)
@@ -1366,6 +1492,7 @@ static int sdhc_stm32_sdio_rw_extended_dma(struct sdhc_command *cmd, SDMMC_TypeD
 
 	return 0;
 }
+#endif /* CONFIG_SDHC_STM32_DMA_MODE */
 
 static int sdhc_stm32_switch_speed(SDMMC_TypeDef *instance, uint32_t switch_arg, uint8_t status[64],
 				   uint32_t block_size, uint32_t buf_size,
@@ -1462,47 +1589,47 @@ static int sdhc_stm32_rw_extended(const struct device *dev, struct sdhc_command 
 	dev_data->block_size = is_block_mode ? data->block_size : 0;
 	dev_data->total_transfer_bytes = data->blocks * data->block_size;
 
-	if (IS_ENABLED(CONFIG_SDHC_STM32_DMA_MODE)) {
-		dev_data->sdio_dma_buf = k_aligned_alloc(CONFIG_SDHC_BUFFER_ALIGNMENT,
-							 data->blocks * data->block_size);
-		if (dev_data->sdio_dma_buf == NULL) {
-			LOG_ERR("DMA buffer allocation failed");
-			return -ENOMEM;
-		}
-
-		if (direction == SDIO_IO_WRITE) {
-			memcpy(dev_data->sdio_dma_buf, data->data, dev_data->total_transfer_bytes);
-		}
-
-		sys_cache_data_flush_range(dev_data->sdio_dma_buf, dev_data->total_transfer_bytes);
-		res = sdhc_stm32_sdio_rw_extended_dma(cmd, instance, is_block_mode, dev_data,
-						      direction);
-
-		/* Only wait on semaphore if HAL function succeeded */
-		if (res != 0) {
-			k_free(dev_data->sdio_dma_buf);
-			return res;
-		}
-
-		/* Wait for whole transfer to complete */
-		if (k_sem_take(&dev_data->device_sync_sem, K_MSEC(data->timeout_ms)) != 0) {
-			dev_data->error_code |= SDMMC_ERROR_TIMEOUT;
-			sdhc_stm32_abort_dma_transfer(instance, dev_data);
-			k_free(dev_data->sdio_dma_buf);
-			return -ETIMEDOUT;
-		}
-
-		if (direction == SDIO_IO_READ) {
-			sys_cache_data_invd_range(dev_data->sdio_dma_buf,
-						  dev_data->total_transfer_bytes);
-			memcpy(data->data, dev_data->sdio_dma_buf, data->block_size * data->blocks);
-		}
-
-		k_free(dev_data->sdio_dma_buf);
-	} else {
-		res = sdhc_stm32_sdio_rw_extended_poll(cmd, instance, is_block_mode, data->data,
-						       data->timeout_ms, dev_data, direction);
+#ifndef CONFIG_SDHC_STM32_DMA_MODE
+	res = sdhc_stm32_sdio_rw_extended_poll(cmd, instance, is_block_mode, data->data,
+						data->timeout_ms, dev_data, direction);
+#else /* CONFIG_SDHC_STM32_DMA_MODE */
+	dev_data->sdio_dma_buf = k_aligned_alloc(CONFIG_SDHC_BUFFER_ALIGNMENT,
+							data->blocks * data->block_size);
+	if (dev_data->sdio_dma_buf == NULL) {
+		LOG_ERR("DMA buffer allocation failed");
+		return -ENOMEM;
 	}
+
+	if (direction == SDIO_IO_WRITE) {
+		memcpy(dev_data->sdio_dma_buf, data->data, dev_data->total_transfer_bytes);
+	}
+
+	sys_cache_data_flush_range(dev_data->sdio_dma_buf, dev_data->total_transfer_bytes);
+	res = sdhc_stm32_sdio_rw_extended_dma(cmd, instance, is_block_mode, dev_data,
+						direction);
+
+	/* Only wait on semaphore if HAL function succeeded */
+	if (res != 0) {
+		k_free(dev_data->sdio_dma_buf);
+		return res;
+	}
+
+	/* Wait for whole transfer to complete */
+	if (k_sem_take(&dev_data->device_sync_sem, K_MSEC(data->timeout_ms)) != 0) {
+		dev_data->error_code |= SDMMC_ERROR_TIMEOUT;
+		sdhc_stm32_abort_dma_transfer(instance, dev_data);
+		k_free(dev_data->sdio_dma_buf);
+		return -ETIMEDOUT;
+	}
+
+	if (direction == SDIO_IO_READ) {
+		sys_cache_data_invd_range(dev_data->sdio_dma_buf,
+						dev_data->total_transfer_bytes);
+		memcpy(data->data, dev_data->sdio_dma_buf, data->block_size * data->blocks);
+	}
+
+	k_free(dev_data->sdio_dma_buf);
+#endif /* CONFIG_SDHC_STM32_DMA_MODE */
 
 	return res;
 }
@@ -1820,6 +1947,7 @@ static int sdhc_stm32_reset(const struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_SDHC_STM32_DMA_MODE
 static void sdhc_stm32_clear_icr_flags(SDMMC_TypeDef *instance)
 {
 	uint32_t icr_clear_flag = 0;
@@ -1867,6 +1995,7 @@ void sdhc_stm32_event_isr(const struct device *dev)
 		sdhc_stm32_log_err_type(data);
 	}
 }
+#endif /* CONFIG_SDHC_STM32_DMA_MODE */
 
 static int sdhc_stm32_init(const struct device *dev)
 {
@@ -1967,14 +2096,18 @@ static int sdhc_stm32_pm_action(const struct device *dev, enum pm_device_action 
 }
 #endif /* CONFIG_PM_DEVICE */
 
+#ifdef CONFIG_SDHC_STM32_DMA_MODE
 #define STM32_SDHC_IRQ_HANDLER(index)                                                              \
 	static void sdhc_stm32_irq_config_func_##index(void)                                       \
 	{                                                                                          \
-		IRQ_CONNECT(DT_INST_IRQ_BY_NAME(index, event, irq),                                \
-			    DT_INST_IRQ_BY_NAME(index, event, priority), sdhc_stm32_event_isr,     \
+		IRQ_CONNECT(DT_INST_IRQN(index),                                                   \
+			    DT_INST_IRQ(index, priority), sdhc_stm32_event_isr,                    \
 			    DEVICE_DT_INST_GET(index), 0);                                         \
-		irq_enable(DT_INST_IRQ_BY_NAME(index, event, irq));                                \
+		irq_enable(DT_INST_IRQN(index));                                                   \
 	}
+#else /* CONFIG_SDHC_STM32_DMA_MODE */
+#define STM32_SDHC_IRQ_HANDLER(index) /* no-op */
+#endif /* CONFIG_SDHC_STM32_DMA_MODE*/
 
 #define SDHC_STM32_INIT(index)                                                                     \
                                                                                                    \
@@ -1986,7 +2119,8 @@ static int sdhc_stm32_pm_action(const struct device *dev, enum pm_device_action 
                                                                                                    \
 	static const struct sdhc_stm32_config sdhc_stm32_cfg_##index = {                           \
 		DEVICE_MMIO_ROM_INIT(DT_DRV_INST(index)),                                          \
-		.irq_config_func = sdhc_stm32_irq_config_func_##index,                             \
+		IF_ENABLED(CONFIG_SDHC_STM32_DMA_MODE,                                             \
+			(.irq_config_func = sdhc_stm32_irq_config_func_##index,))                  \
 		.pclken = pclken_##index,                                                          \
 		.pcfg = PINCTRL_DT_INST_DEV_CONFIG_GET(index),                                     \
 		.hw_flow_control = DT_INST_PROP(index, hw_flow_control),                           \

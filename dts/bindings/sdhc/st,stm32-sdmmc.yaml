@@ -1,4 +1,10 @@
-description: STM32 SDMMC Host Controller
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+title: STM32 SDMMC Host Controller
+
+description: |
+  STM32 Host Controller for SD/SDIO/MMC/eMMC with internal DMA controller.
 
 compatible: "st,stm32-sdmmc"
 
@@ -37,12 +43,10 @@ properties:
     type: int
     default: 1
     description: |
-      bus width for SDMMC access, defaults to the minimum necessary
-      number of bus lines
-    enum:
-      - 1
-      - 4
-      - 8
+      Bus width for SDMMC access.
+
+      Defaults to the minimum necessary number of bus lines.
+    enum: [1, 4, 8]
 
   clk-div:
     type: int
@@ -63,33 +67,8 @@ properties:
   idma:
     type: boolean
     description: |
-      SDMMC device has an internal DMA. Internal DMA doesn't require any additional
-      configuration using "dmas" property.
+      SDMMC device has an internal DMA.
       Delete this property to use interrupt driven mode.
-
-  dmas:
-    description: |
-      Optional DMA channel specifier. If DMA should be used, specifier should
-      hold a phandle reference to the dma controller, the channel number,
-      the slot number, channel configuration and finally features.
-
-      Only priority bits are used in the configuration. There are no feature
-      flags.
-
-      For example dmas for TX/RX on SDMMC
-         dmas = <&dma2 4 6 0x30000 0x00>, <&dma2 4 3 0x30000 0x00>;
-      Alternatively, for a shared TX/RX DMA channels on a STM32L4
-         dmas = <&dma2 5 7 STM32_DMA_PRIORITY_HIGH>;
-
-  dma-names:
-    description: |
-      DMA channel name. If DMA should be used, expected value is either "tx", "rx"
-      or a single "txrx" for the shared channel configuration
-
-      For example
-         dma-names = "tx", "rx";
-      or
-         dma-names = "txrx";
 
   hw-flow-control:
     type: boolean
