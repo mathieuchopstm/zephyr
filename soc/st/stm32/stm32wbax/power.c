@@ -8,6 +8,7 @@
 #include <zephyr/pm/pm.h>
 #include <soc.h>
 #include <stm32_bitops.h>
+#include <stm32_common.h>
 #include <zephyr/init.h>
 #include <zephyr/arch/common/pm_s2ram.h>
 #include <zephyr/drivers/timer/system_timer.h>
@@ -321,6 +322,11 @@ void pm_state_exit_post_ops(enum pm_state state, uint8_t substate_id)
 		 * done, this flag can be cleaned.
 		 */
 		standby_entered = false;
+
+#if defined(CONFIG_STM32_WKUP_PINS) && defined(CONFIG_STM32_GPIO)
+		/* Trigger GPIO interrupts corresponding to wake-up events */
+		stm32_pwrc_dispatch_wakeup_gpio_irqs();
+#endif /* CONFIG_STM32_WKUP_PINS && CONFIG_STM32_GPIO */
 	}
 #endif
 
