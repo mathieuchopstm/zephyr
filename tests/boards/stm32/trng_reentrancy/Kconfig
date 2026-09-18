@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "TRNG Driver Re-entrancy Test"
+
+config TEST_STM32_ENTROPY_ENABLE_REENTRANCY_HOOK
+	def_bool y
+	help
+	  Hidden option consumed by the TRNG driver.
+	  It will generate an NMI from entropy_get_entropy_isr() which
+	  the application is supposed to catch in order to test re-entrancy.
+
+config TEST_RANDOM_REQUEST_SIZE
+	int "Amount of random bytes to request"
+	default 64
+	help
+	  Specify the number of random bytes to request from the TRNG driver
+	  for each call to entropy_get_entropy_isr().
+
+source "Kconfig.zephyr"

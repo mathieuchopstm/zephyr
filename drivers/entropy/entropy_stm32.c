@@ -44,6 +44,22 @@ LOG_MODULE_REGISTER(entropy_stm32, CONFIG_ENTROPY_LOG_LEVEL);
 #define STM32_CONDRST_SUPPORT
 #endif
 
+#if defined(CONFIG_TEST_STM32_ENTROPY_ENABLE_REENTRANCY_HOOK)
+const char *z_stm32_entropy_reentrancy_case = NULL;
+#endif /* CONFIG_TEST_STM32_ENTROPY_ENABLE_REENTRANCY_HOOK */
+
+static void _raise_nmi_for_reentrancy_test(const char *msg)
+{
+#if defined(CONFIG_TEST_STM32_ENTROPY_ENABLE_REENTRANCY_HOOK)
+	/* Trigger NMI for re-entrancy testing if not already in NMI */
+	if (__get_IPSR() != 2) {
+		z_stm32_entropy_reentrancy_case = msg;
+		SCB->ICSR |= SCB_ICSR_NMIPENDSET_Msk;
+		__DSB();
+	}
+#endif /* CONFIG_TEST_STM32_ENTROPY_ENABLE_REENTRANCY_HOOK */
+}
+
 /*
  * This driver need to take into account all STM32 family:
  *  - simple rng without hardware fifo and no DMA.
@@ -255,6 +271,9 @@ static void release_rng(void)
 	old_use_count = entropy_stm32_rng_data.use_count;
 	entropy_stm32_rng_data.use_count--;
 
+	LOG_DBG("New use count after release: %u",
+		(unsigned int)entropy_stm32_rng_data.use_count);
+
 	if (old_use_count != 1) {
 		/* We're not the last; keep HSEM held and RNG enabled. */
 		k_spin_unlock(&entropy_stm32_rng_data.uc_lock, key);
@@ -339,6 +358,9 @@ static void acquire_rng(void)
 	key = k_spin_lock(&entropy_stm32_rng_data.uc_lock);
 	old_use_count = entropy_stm32_rng_data.use_count;
 	entropy_stm32_rng_data.use_count++;
+
+	LOG_DBG("New use count after acquire: %u",
+		(unsigned int)entropy_stm32_rng_data.use_count);
 
 	if (old_use_count == 0) {
 		ASSERT_RNG_HSEM_NOT_OWNED();
@@ -563,6 +585,7 @@ static uint16_t generate_from_isr(uint8_t *buf, uint16_t len)
 			__WFE();
 #endif /* !IRQLESS_TRNG */
 #endif /* !CONFIG_PM_S2RAM */
+			_raise_nmi_for_reentrancy_test("waiting for DRDY");
 		}
 
 		ret = random_sample_get(&rnd_sample);
@@ -907,6 +930,7 @@ static int entropy_stm32_rng_get_entropy_isr(const struct device *dev,
 
 		irq_disable(IRQN);
 #endif /* !IRQLESS_TRNG */
+		_raise_nmi_for_reentrancy_test("before acquire");
 
 		/*
 		 * Ensure the RNG is enabled then poll for entropy.
@@ -918,7 +942,9 @@ static int entropy_stm32_rng_get_entropy_isr(const struct device *dev,
 		 * doesn't will eventually call it.
 		 */
 		acquire_rng();
+		_raise_nmi_for_reentrancy_test("after acquire");
 		cnt = generate_from_isr(buf, len);
+		_raise_nmi_for_reentrancy_test("after generate");
 		release_rng();
 
 #if !IRQLESS_TRNG

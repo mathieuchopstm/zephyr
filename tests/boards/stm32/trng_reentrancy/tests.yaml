@@ -1,0 +1,7 @@
+tests:
+  stm32.entropy.reentrancy:
+    integration_platforms:
+      - nucleo_h723zg
+    tags:
+      - drivers
+      - entropy
