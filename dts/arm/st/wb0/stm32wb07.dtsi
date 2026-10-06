@@ -89,4 +89,21 @@
 			};
 		};
 	};
+
+
+	die_temp: dietemp {
+		compatible = "st,stm32-temp-cal";
+		io-channels = <&adc1 13>;
+		nvmem-cells = <&ts_c30_otp>, <&ts_c85_otp>;
+		nvmem-cell-names = "TS_CAL1", "TS_CAL2";
+		ts-cal1-temp = <30>;
+		ts-cal2-temp = <85>;
+
+		/* dietemp driver is oblivious to the STM32WB0x ADC's specificities,
+		 * so this value must match the ADC driver's `ref_internal` for the
+		 * computed temperature value to be correct.
+		 */
+		ts-cal-vrefanalog = <3600>;
+		status = "disabled";
+	};
 };

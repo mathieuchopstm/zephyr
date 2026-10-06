@@ -52,18 +52,6 @@ LOG_MODULE_REGISTER(stm32_temp, CONFIG_SENSOR_LOG_LEVEL);
 #define HAS_CALIBRATION 1
 #endif
 
-#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX) \
-	|| defined(CONFIG_SOC_SERIES_STM32WL3X)
-/**
- * Workaround for undocumented erratum on STM32WB05/09 and STM32WL3x:
- * after powering on the ADC, the first temperature sensor measurement is
- * incorrect. Request another reading after the first one and keep only
- * the second measurement's value, which should be correct.
- */
-#define HAS_REPEATED_READS_ERRATUM 1
-#define NUM_READINGS_NECESSARY 2
-#endif /* SOC_STM32WB05XX || SOC_STM32WB09XX || SOC_SERIES_STM32WL3X */
-
 union stm32_dietemp_calib_data {
 	uint16_t raw[MAX_CALIB_POINTS];
 
@@ -128,31 +116,6 @@ struct stm32_temp_config {
 #endif /* HAS_CALIBRATION */
 	bool is_ntc;
 };
-
-#if defined(HAS_REPEATED_READS_ERRATUM)
-static int sample_reads_remaining;
-
-enum adc_action repeat_first_read_seq_cb(const struct device *dev,
-					 const struct adc_sequence *sequence,
-					 uint16_t sampling_index)
-{
-	ARG_UNUSED(dev);
-	ARG_UNUSED(sequence);
-	ARG_UNUSED(sampling_index);
-
-	sample_reads_remaining--;
-	if (sample_reads_remaining > 0) {
-		return ADC_ACTION_REPEAT;
-	}
-
-	return ADC_ACTION_FINISH;
-}
-
-static struct adc_sequence_options repeated_read_seq_opts = {
-	.callback = repeat_first_read_seq_cb,
-};
-#endif /* defined(HAS_REPEATED_READS_ERRATUM) */
-
 
 static void stm32_temp_enable_tempsensor_channel(ADC_TypeDef *adc)
 {
@@ -300,10 +263,6 @@ static int stm32_temp_sample_fetch(const struct device *dev, enum sensor_channel
 	stm32_temp_enable_tempsensor_channel(cfg->adc_base);
 #endif /* CONFIG_STM32_TEMP_INJECTED */
 
-#if defined(HAS_REPEATED_READS_ERRATUM)
-	sample_reads_remaining = NUM_READINGS_NECESSARY;
-#endif /* HAS_REPEATED_READS_ERRATUM */
-
 	rc = adc_read(cfg->adc, sp);
 	if (rc == 0) {
 		data->raw = data->sample_buffer;
@@ -406,6 +365,11 @@ static int stm32_temp_init(const struct device *dev)
 	if (res < 0) {
 		return res;
 	}
+
+	printk("C30 = 0x%04hX TCK = 0x%04hX/%u\n",
+		data->calib_data.raw[0],
+		data->calib_data.raw[1],
+		data->calib_data.raw[1]);
 #endif
 
 	*asp = (struct adc_sequence){
@@ -416,9 +380,6 @@ static int stm32_temp_init(const struct device *dev)
 #ifdef CONFIG_STM32_TEMP_INJECTED
 		.priority = 1,
 #endif /* CONFIG_STM32_TEMP_INJECTED */
-#if defined(HAS_REPEATED_READS_ERRATUM)
-		.options = &repeated_read_seq_opts,
-#endif /* defined(HAS_REPEATED_READS_ERRATUM) */
 	};
 
 #ifdef CONFIG_STM32_TEMP_INJECTED

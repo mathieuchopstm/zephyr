@@ -117,6 +117,30 @@
 				status = "disabled";
 			};
 
+			/* Undocumented/unnamed RO area */
+			flash@10001e00 {
+				compatible = "st,stm32-nvm-otp";
+				reg = <0x10001e00 256>;
+
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					ts_tck_otp: tck@5c {
+						reg = <0x5c 0x4>;
+						#nvmem-cell-cells = <0>;
+						read-only;
+					};
+
+					ts_c30_otp: c30@60 {
+						reg = <0x60 0x4>;
+						#nvmem-cell-cells = <0>;
+						read-only;
+					};
+				};
+			};
+
 			flash0: flash@10040000 {
 				compatible = "st,stm32-nv-flash", "soc-nv-flash";
 				#address-cells = <1>;

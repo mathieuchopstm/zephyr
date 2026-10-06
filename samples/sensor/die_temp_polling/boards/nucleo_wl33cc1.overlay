@@ -1,0 +1,21 @@
+/ {
+	aliases {
+		die-temp0 = &die_temp;
+	};
+};
+
+&die_temp {
+	status = "okay";
+};
+
+&dma1 {
+	status = "okay";
+};
+
+&dmamux1 {
+	status = "okay";
+};
+
+&adc1 {
+	status = "okay";
+};

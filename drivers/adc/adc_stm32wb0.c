@@ -392,19 +392,25 @@ static void adc_release_pm_locks(void)
 /**
  * Driver private functions
  */
-
 static void configure_tempsensor_calib_point(ADC_TypeDef *adc, uint32_t calib_point)
 {
-	uint16_t gain;
-#if defined(CONFIG_SOC_STM32WB09XX) || defined(CONFIG_SOC_STM32WB05XX)
-	/** RM0505/RM0529 §12.2.1 "Temperature sensor subsystem" */
+	uint16_t gain, offset;
+#if defined(CONFIG_SOC_STM32WB09XX) || defined(CONFIG_SOC_STM32WB05XX) \
+	|| defined(CONFIG_SOC_SERIES_STM32WL3X)
+	/**
+	 * RM0505/RM0529 §12.2.1 "Temperature sensor subsystem"
+	 * Note that documentation is unclear about this
+	 * but the offset to use is zero in this case too.
+	 */
 	gain = 0xFFF;
+	offset = 0;
 #else
 	/** RM0530 §12.2.2 "Temperature sensor subsystem" */
 	gain = LL_ADC_GET_CALIB_GAIN_FOR_VINPX_1V2();
+	offset = 0;
 #endif /* CONFIG_SOC_STM32WB09XX | CONFIG_SOC_STM32WB05XX */
 
-	LL_ADC_ConfigureCalibPoint(adc, calib_point, gain, 0x0);
+	LL_ADC_ConfigureCalibPoint(adc, calib_point, gain, offset);
 }
 
 /**
@@ -595,6 +601,16 @@ static void schedule_and_start_adc_sequence(ADC_TypeDef *adc, struct adc_stm32wb
 	};
 	uint8_t calib_pt_vin_range[NUM_CALIBRATION_POINTS];
 
+	/*
+	 * Configure Down Sampler based on sequence settings
+	 * and reset the sample rate and sampling time to
+	 * default values (125 ns sampling time @ 1 Msps rate).
+	 * This will be overridden below if Tj sensor is scheduled.
+	 */
+	LL_ADC_SetSampleRate(adc, LL_ADC_SAMPLE_RATE_16);
+	LL_ADC_SetInputSamplingMode(adc, LL_ADC_SAMPLING_AT_START);
+	LL_ADC_SetDSDataOutputRatio(adc, data->ctx.sequence.oversampling);
+
 	/* Schedule as many channels as possible for sampling */
 	for (uint32_t channel = 0;
 		channel < LL_ADC_CHANNEL_MAX && remaining_unsampled != 0U;
@@ -634,25 +650,17 @@ static void schedule_and_start_adc_sequence(ADC_TypeDef *adc, struct adc_stm32wb
 		}
 
 		if (channel == LL_ADC_CHANNEL_TEMPSENSOR) {
-			if (calib_pt_ch_type[calib_pt] == ADC_CHANNEL_TYPE_INVALID) {
-				/**
-				 * Temperature sensor is a special channel: it must be sampled
-				 * with special gain/offset instead of the calibration values found
-				 * in engineering flash. For this reason, it must NOT be scheduled
-				 * with any other 1.2V Vinput range, single-ended positive channel.
-				 *
-				 * If this check succeeds, then no such channel is scheduled, and we
-				 * can add the temperature sensor to this sequence. We're sure there
-				 * won't be any conflict because the temperature sensor is the last
-				 * channel. Otherwise, a channel with 1.2V Vinput range has been
-				 * scheduled and we must delay the temperature sensor measurement to
-				 * another sequence.
+			if (sequence_length > 0) {
+				/*
+				 * The temperature sensor sampling must be done in
+				 * a dedicated sequence for reasons explained below.
+				 * Exit scheduling loop immediately if any other
+				 * channel has already been scheduled.
 				 */
-				temp_sensor_scheduled = true;
-			} else {
-				/* Exit scheduling loop before scheduling temperature sensor */
 				break;
 			}
+
+			temp_sensor_scheduled = true;
 		}
 
 		/* Ensure calibration point tables are updated.
@@ -688,19 +696,53 @@ static void schedule_and_start_adc_sequence(ADC_TypeDef *adc, struct adc_stm32wb
 #endif
 	}
 
-	/* Configure all (used) calibration points */
-	for (int i = 0; i < NUM_CALIBRATION_POINTS; i++) {
-		uint8_t type = calib_pt_ch_type[i];
-		uint8_t range = calib_pt_vin_range[i];
+	if (temp_sensor_scheduled) {
+		__ASSERT_NO_MSG(calib_pt_ch_type[0] == ADC_CHANNEL_TYPE_SINGLE_POS);
+		__ASSERT_NO_MSG(calib_pt_vin_range[0] == LL_ADC_VIN_RANGE_1V2);
 
-		if (type == ADC_CHANNEL_TYPE_INVALID) {
-			break;
-		} else if ((type == ADC_CHANNEL_TYPE_SINGLE_POS)
-				&& (range == LL_ADC_VIN_RANGE_1V2)
-				&& temp_sensor_scheduled) {
-			/* Configure special calibration point for temperature sensor */
-			configure_tempsensor_calib_point(adc, i);
-		} else {
+		/* Configure special calibration point for temperature sensor */
+		configure_tempsensor_calib_point(adc, 0);
+
+
+		/**
+		 * The temperature sensor sampling can return a degraded value
+		 * if a specific ADC configuration is not applied:
+		 * - Down Sampler configured at maximum ratio (128)
+		 * - Sampling time derived from sample rate
+		 * - Slowest possible sample rate
+		 *
+		 * Oversampling could arguably be controlled by the eponymous field
+		 * of struct adc_sequence, but there is no way to express the other
+		 * configuration parameters, so dedicated configuration code would
+		 * be needed anyways; hardcoding the Down Sampler configuration as
+		 * part of this code ensures it cannot be misconfigured and allows
+		 * interleaving reads of the temperature sensor with reads of other
+		 * channels.
+		 *
+		 * NOTE: in addition to above reason, the temperature sensor channel
+		 * requires specific gain/offset values to be applied on some SoCs,
+		 * so it could NOT be scheduled if any other single-ended positive
+		 * channel with 1.2V Vinput range had been scheduled. Sampling the
+		 * the temperature sensor in a dedicated sequence avoids this other
+		 * pitfall.
+		 */
+		LL_ADC_SetDSDataOutputRatio(adc, LL_ADC_DS_RATIO_128);
+#if defined(LL_ADC_SAMPLE_RATE_140)
+		LL_ADC_SetSampleRate(adc, LL_ADC_SAMPLE_RATE_140);
+#else /* LL_ADC_SAMPLE_RATE_140 */
+		LL_ADC_SetSampleRate(adc, LL_ADC_SAMPLE_RATE_28);
+#endif /* LL_ADC_SAMPLE_RATE_140 */
+		LL_ADC_SetInputSamplingMode(adc, LL_ADC_SAMPLING_AT_END);
+	} else {
+		/* Configure all (used) calibration points */
+		for (int i = 0; i < NUM_CALIBRATION_POINTS; i++) {
+			uint8_t type = calib_pt_ch_type[i];
+			uint8_t range = calib_pt_vin_range[i];
+
+			if (type == ADC_CHANNEL_TYPE_INVALID) {
+				break;
+			}
+
 			configure_calib_point_from_flash(adc, i, type, range);
 		}
 	}
@@ -783,8 +825,7 @@ static int initiate_read_operation(const struct device *dev,
 	/* Configure resolution */
 	LL_ADC_SetDSDataOutputWidth(adc, ds_width_from_adc_res(sequence->resolution));
 
-	/* Configure oversampling */
-	LL_ADC_SetDSDataOutputRatio(adc, sequence->oversampling);
+	/* Oversampling is configured during channel scheduling */
 
 	/* Start reading using the ADC */
 	adc_context_start_read(&data->ctx, sequence);
@@ -806,6 +847,9 @@ void adc_stm32wb0_isr(const struct device *dev)
 
 		/* Write ADC data to output buffer and update pointer */
 		*data->next_sample_ptr++ = LL_ADC_DSGetOutputData(adc);
+
+		const uint16_t *const p = data->next_sample_ptr - 1;
+		printk("ADC => 0x%04hX | ", *p);
 	}
 
 	/* Down sampler overflow detected - return error */
@@ -1092,6 +1136,7 @@ int adc_stm32wb0_init(const struct device *dev)
 
 	/* Set ADC sample rate to 1 Msps (maximum speed) */
 	LL_ADC_SetSampleRate(adc, LL_ADC_SAMPLE_RATE_16);
+	LL_ADC_SetInputSamplingMode(adc, LL_ADC_SAMPLING_AT_START);
 
 	/* Keep new data on overrun, if it ever happens */
 	LL_ADC_SetOverrunDS(adc, LL_ADC_NEW_DATA_IS_KEPT);
