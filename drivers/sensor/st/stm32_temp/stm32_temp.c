@@ -34,6 +34,16 @@ LOG_MODULE_REGISTER(stm32_temp, CONFIG_SENSOR_LOG_LEVEL);
 #elif DT_HAS_COMPAT_STATUS_OKAY(st_stm32c0_temp_cal)
 #define DT_DRV_COMPAT st_stm32c0_temp_cal
 #define HAS_SINGLE_CALIBRATION 1
+#elif DT_HAS_COMPAT_STATUS_OKAY(st_stm32wb0_temp_cal)
+/*
+ * Two calibration points like "st,stm32-temp-cal" but their meaning
+ * and the formula is different. Defining HAS_DUAL_CALIBRATION allows
+ * reusing the calibration data read logic from other series, whereas
+ * HAS_TCHUCK_FORMULA selects the right formula.
+ */
+#define DT_DRV_COMPAT st_stm32wb0_temp_cal
+#define HAS_DUAL_CALIBRATION 1
+#define HAS_TCHUCK_FORMULA 1
 #else
 #error "No compatible devicetree node found"
 #endif
@@ -51,6 +61,13 @@ union stm32_dietemp_calib_data {
 		uint16_t ts_cal2;
 #endif /* HAS_DUAL_CALIBRATION */
 	};
+
+#if defined(HAS_TCHUCK_FORMULA)
+	struct {
+		uint16_t c30; /* aliases ts_cal1 */
+		uint16_t tck; /* aliases ts_cal2 */
+	};
+#endif /* HAS_TCHUCK_FORMULA */
 };
 
 struct stm32_temp_data {
@@ -77,6 +94,14 @@ struct stm32_temp_config {
 #if !defined(HAS_CALIBRATION)
 	float average_slope;		/** Unit: mV/°C */
 	int v25;			/** Unit: mV */
+#elif defined(HAS_TCHUCK_FORMULA)
+	/*
+	 * Use 'ts_cal1' / 'ts_cal2' field names to allow reuse
+	 * of the calibration data read logic from other series.
+	 * Drop other fields which are unnecessary.
+	 */
+	calib_info_t ts_cal1;		/** C30 - No unit (ADC sample value) */
+	calib_info_t ts_cal2;		/** TCK - Unit: 0.1 °C */
 #else /* HAS_CALIBRATION */
 	unsigned int calib_vrefanalog;	/** Unit: mV */
 	unsigned int calib_data_shift;
@@ -91,6 +116,41 @@ struct stm32_temp_config {
 #endif /* HAS_CALIBRATION */
 	bool is_ntc;
 };
+
+#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX)
+/**
+ * Workaround for errata in STM32WB05/09 ADC:
+ * The first temperature sensor reading after powering on the ADC is incorrect
+ * (usually, around ~0x300 lower than it should be).
+ *
+ * Sample twice to ensure we always get proper data.
+ */
+static bool wb05_wb09_first_sampling;
+
+enum adc_action wb05_wb09_adc_seq_cb(const struct device *dev,
+				     const struct adc_sequence *sequence,
+				     uint16_t sampling_index)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(sequence);
+	ARG_UNUSED(sampling_index);
+
+	struct stm32_temp_data *data = CONTAINER_OF(sequence, struct stm32_temp_data, adc_seq);
+
+	if (wb05_wb09_first_sampling) {
+		printk("first sample = 0x%04hhX\n", data->sample_buffer);
+		wb05_wb09_first_sampling = false;
+		return ADC_ACTION_REPEAT;
+	}
+	printk("second sample = 0x%04hhX\n", data->sample_buffer);
+	return ADC_ACTION_FINISH;
+}
+
+static struct adc_sequence_options wb05_wb09_adc_seq_opts = {
+	.callback = wb05_wb09_adc_seq_cb,
+};
+#endif /* defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX) */
+
 
 static void stm32_temp_enable_tempsensor_channel(ADC_TypeDef *adc)
 {
@@ -147,7 +207,15 @@ static float convert_adc_sample_to_temperature(const struct device *dev)
 	const union stm32_dietemp_calib_data *cd = &data->calib_data;
 	const float sense_data = ((float)vdda_mv / cfg->calib_vrefanalog) * data->raw;
 
-#if defined(HAS_SINGLE_CALIBRATION)
+#if defined(HAS_TCHUCK_FORMULA)
+	/**
+	 * SoCs with chuck temperature (STM32WL3/WB05/WB09):
+	 * Tjunction = (Cmeas - C30 + TCK) / 10
+	 *
+	 * where Cmeas is the ADC output value.
+	 */
+	temperature = (float)(data->raw - cd->c30 + cd->tck) / 10.0f;
+#elif defined(HAS_SINGLE_CALIBRATION)
 	/**
 	 * Series with one calibration point (STM32C0,STM32F030/F070):
 	 *  Tjunction = ((Dividend) / Avg_Slope_Code) + TS_CAL1_TEMP
@@ -216,6 +284,10 @@ static int stm32_temp_sample_fetch(const struct device *dev, enum sensor_channel
 
 	stm32_temp_enable_tempsensor_channel(cfg->adc_base);
 #endif /* CONFIG_STM32_TEMP_INJECTED */
+
+#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX)
+	wb05_wb09_first_sampling = true;
+#endif /* CONFIG_SOC_STM32WB05XX || CONFIG_SOC_STM32WB09XX */
 
 	rc = adc_read(cfg->adc, sp);
 	if (rc == 0) {
@@ -329,6 +401,9 @@ static int stm32_temp_init(const struct device *dev)
 #ifdef CONFIG_STM32_TEMP_INJECTED
 		.priority = 1,
 #endif /* CONFIG_STM32_TEMP_INJECTED */
+#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX)
+		.options = &wb05_wb09_adc_seq_opts,
+#endif /* defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX) */
 	};
 
 #ifdef CONFIG_STM32_TEMP_INJECTED
@@ -384,7 +459,11 @@ static const struct stm32_temp_config stm32_temp_dev_config = {
 		.channel_id = DT_INST_IO_CHANNELS_INPUT(0),
 		.differential = 0
 	},
-#if defined(HAS_CALIBRATION)
+
+#if defined(HAS_TCHUCK_FORMULA)
+	.ts_cal1 = INIT_PARAMETER(0, c30),
+	.ts_cal2 = INIT_PARAMETER(0, tck),
+#elif defined(HAS_CALIBRATION)
 	.ts_cal1 = INIT_PARAMETER(0, ts_cal1),
 	.ts_cal1_temp = DT_INST_PROP(0, ts_cal1_temp),
 #if defined(HAS_SINGLE_CALIBRATION)
