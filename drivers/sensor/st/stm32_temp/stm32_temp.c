@@ -52,6 +52,18 @@ LOG_MODULE_REGISTER(stm32_temp, CONFIG_SENSOR_LOG_LEVEL);
 #define HAS_CALIBRATION 1
 #endif
 
+#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX) \
+	|| defined(CONFIG_SOC_SERIES_STM32WL3X)
+/**
+ * Workaround for undocumented erratum on STM32WB05/09 and STM32WL3x:
+ * after powering on the ADC, the first temperature sensor measurement is
+ * incorrect. Request another reading after the first one and keep only
+ * the second measurement's value, which should be correct.
+ */
+#define HAS_REPEATED_READS_ERRATUM 1
+#define NUM_READINGS_NECESSARY 2
+#endif /* SOC_STM32WB05XX || SOC_STM32WB09XX || SOC_SERIES_STM32WL3X */
+
 union stm32_dietemp_calib_data {
 	uint16_t raw[MAX_CALIB_POINTS];
 
@@ -117,57 +129,57 @@ struct stm32_temp_config {
 	bool is_ntc;
 };
 
-#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX)
-/**
- * Workaround for errata in STM32WB05/09 ADC:
- * The first temperature sensor reading after powering on the ADC is incorrect
- * (usually, around ~0x300 lower than it should be).
- *
- * Sample twice to ensure we always get proper data.
- */
-static bool wb05_wb09_first_sampling;
+#if defined(HAS_REPEATED_READS_ERRATUM)
+static int sample_reads_remaining;
 
-enum adc_action wb05_wb09_adc_seq_cb(const struct device *dev,
-				     const struct adc_sequence *sequence,
-				     uint16_t sampling_index)
+enum adc_action repeat_first_read_seq_cb(const struct device *dev,
+					 const struct adc_sequence *sequence,
+					 uint16_t sampling_index)
 {
 	ARG_UNUSED(dev);
 	ARG_UNUSED(sequence);
 	ARG_UNUSED(sampling_index);
 
-	struct stm32_temp_data *data = CONTAINER_OF(sequence, struct stm32_temp_data, adc_seq);
-
-	if (wb05_wb09_first_sampling) {
-		printk("first sample = 0x%04hhX\n", data->sample_buffer);
-		wb05_wb09_first_sampling = false;
+	sample_reads_remaining--;
+	if (sample_reads_remaining > 0) {
 		return ADC_ACTION_REPEAT;
 	}
-	printk("second sample = 0x%04hhX\n", data->sample_buffer);
+
 	return ADC_ACTION_FINISH;
 }
 
-static struct adc_sequence_options wb05_wb09_adc_seq_opts = {
-	.callback = wb05_wb09_adc_seq_cb,
+static struct adc_sequence_options repeated_read_seq_opts = {
+	.callback = repeat_first_read_seq_cb,
 };
-#endif /* defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX) */
+#endif /* defined(HAS_REPEATED_READS_ERRATUM) */
 
 
 static void stm32_temp_enable_tempsensor_channel(ADC_TypeDef *adc)
 {
+#if defined(CONFIG_SOC_SERIES_STM32WB0X) || defined(CONFIG_SOC_SERIES_STM32WL3X)
+	/* The temperature sensor channel is always enabled */
+	ARG_UNUSED(adc);
+#else /* CONFIG_SOC_SERIES_STM32WB0X || CONFIG_SOC_SERIES_STM32WL3X */
 	const uint32_t path = LL_ADC_GetCommonPathInternalCh(STM32_ADC_COMMON_INSTANCE(adc));
 
 	LL_ADC_SetCommonPathInternalCh(STM32_ADC_COMMON_INSTANCE(adc),
 					path | LL_ADC_PATH_INTERNAL_TEMPSENSOR);
 
 	k_usleep(LL_ADC_DELAY_TEMPSENSOR_STAB_US);
+#endif /* CONFIG_SOC_SERIES_STM32WB0X || CONFIG_SOC_SERIES_STM32WL3X */
 }
 
 __maybe_unused static void stm32_temp_disable_tempsensor_channel(ADC_TypeDef *adc)
 {
+#if defined(CONFIG_SOC_SERIES_STM32WB0X) || defined(CONFIG_SOC_SERIES_STM32WL3X)
+	/* The temperature sensor channel is always enabled */
+	ARG_UNUSED(adc);
+#else /* CONFIG_SOC_SERIES_STM32WB0X || CONFIG_SOC_SERIES_STM32WL3X */
 	const uint32_t path = LL_ADC_GetCommonPathInternalCh(STM32_ADC_COMMON_INSTANCE(adc));
 
 	LL_ADC_SetCommonPathInternalCh(STM32_ADC_COMMON_INSTANCE(adc),
 					path & ~LL_ADC_PATH_INTERNAL_TEMPSENSOR);
+#endif /* CONFIG_SOC_SERIES_STM32WB0X || CONFIG_SOC_SERIES_STM32WL3X */
 }
 
 static float convert_adc_sample_to_temperature(const struct device *dev)
@@ -205,7 +217,9 @@ static float convert_adc_sample_to_temperature(const struct device *dev)
 	temperature += 25.0f;
 #else /* HAS_CALIBRATION */
 	const union stm32_dietemp_calib_data *cd = &data->calib_data;
+#if !defined(HAS_TCHUCK_FORMULA)
 	const float sense_data = ((float)vdda_mv / cfg->calib_vrefanalog) * data->raw;
+#endif /* !HAS_TCHUCK_FORMULA */
 
 #if defined(HAS_TCHUCK_FORMULA)
 	/**
@@ -214,6 +228,7 @@ static float convert_adc_sample_to_temperature(const struct device *dev)
 	 *
 	 * where Cmeas is the ADC output value.
 	 */
+	(void)vdda_mv; /* unused by this formula */
 	temperature = (float)(data->raw - cd->c30 + cd->tck) / 10.0f;
 #elif defined(HAS_SINGLE_CALIBRATION)
 	/**
@@ -285,9 +300,9 @@ static int stm32_temp_sample_fetch(const struct device *dev, enum sensor_channel
 	stm32_temp_enable_tempsensor_channel(cfg->adc_base);
 #endif /* CONFIG_STM32_TEMP_INJECTED */
 
-#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX)
-	wb05_wb09_first_sampling = true;
-#endif /* CONFIG_SOC_STM32WB05XX || CONFIG_SOC_STM32WB09XX */
+#if defined(HAS_REPEATED_READS_ERRATUM)
+	sample_reads_remaining = NUM_READINGS_NECESSARY;
+#endif /* HAS_REPEATED_READS_ERRATUM */
 
 	rc = adc_read(cfg->adc, sp);
 	if (rc == 0) {
@@ -401,9 +416,9 @@ static int stm32_temp_init(const struct device *dev)
 #ifdef CONFIG_STM32_TEMP_INJECTED
 		.priority = 1,
 #endif /* CONFIG_STM32_TEMP_INJECTED */
-#if defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX)
-		.options = &wb05_wb09_adc_seq_opts,
-#endif /* defined(CONFIG_SOC_STM32WB05XX) || defined(CONFIG_SOC_STM32WB09XX) */
+#if defined(HAS_REPEATED_READS_ERRATUM)
+		.options = &repeated_read_seq_opts,
+#endif /* defined(HAS_REPEATED_READS_ERRATUM) */
 	};
 
 #ifdef CONFIG_STM32_TEMP_INJECTED
@@ -454,8 +469,13 @@ static const struct stm32_temp_config stm32_temp_dev_config = {
 	.adc_base = (ADC_TypeDef *)DT_REG_ADDR(DT_INST_IO_CHANNELS_CTLR(0)),
 	.adc_cfg = {
 		.gain = ADC_GAIN_1,
+#if defined(CONFIG_SOC_SERIES_STM32WB0X) || defined(CONFIG_SOC_SERIES_STM32WL3X)
+		.reference = ADC_REF_VDD_1_3,
+		.acquisition_time = ADC_ACQ_TIME_DEFAULT, //TBC: can't we use this for all series?
+#else
 		.reference = ADC_REF_INTERNAL,
 		.acquisition_time = ADC_ACQ_TIME_MAX,
+#endif /* DT_HAS_COMPAT_STATUS_OKAY(st_stm32wb0_temp_cal) */
 		.channel_id = DT_INST_IO_CHANNELS_INPUT(0),
 		.differential = 0
 	},
