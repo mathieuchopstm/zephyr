@@ -24,9 +24,6 @@ LOG_MODULE_REGISTER(stm32_vref, CONFIG_SENSOR_LOG_LEVEL);
 #define STM32_ADC_COMMON_INSTANCE	__LL_ADC_COMMON_INSTANCE
 #endif /* CONFIG_STM32_HAL2 */
 
-/* Resolution used to perform the Vref measurement */
-#define MEAS_RES	(12U)
-
 struct stm32_vref_data {
 	struct adc_sequence adc_seq;
 	struct k_mutex mutex;
@@ -46,13 +43,12 @@ typedef const uint16_t *calib_info_t;
 #endif /* CONFIG_STM32_VREF_READ_CALIB_VIA_NVMEM */
 
 struct stm32_vref_config {
-	const struct device *adc;
-	struct adc_channel_cfg adc_cfg;
+	struct adc_dt_spec sensor_spec;
 	ADC_TypeDef *adc_base;
 
 	calib_info_t vrefint_cal;
 	int cal_mv;
-	uint8_t cal_shift;
+	uint8_t cal_res;
 };
 
 static void stm32_vref_enable_vrefsensor_channel(ADC_TypeDef *adc)
@@ -87,19 +83,19 @@ static int stm32_vref_sample_fetch(const struct device *dev, enum sensor_channel
 	}
 
 	k_mutex_lock(&data->mutex, K_FOREVER);
-	pm_device_runtime_get(cfg->adc);
+	pm_device_runtime_get(cfg->sensor_spec.dev);
 
 #ifndef CONFIG_STM32_VREF_INJECTED
-	rc = adc_channel_setup(cfg->adc, &cfg->adc_cfg);
+	rc = adc_channel_setup_dt(&cfg->sensor_spec);
 	if (rc) {
-		LOG_DBG("Setup AIN%u got %d", cfg->adc_cfg.channel_id, rc);
+		LOG_DBG("Setup AIN%u got %d", cfg->sensor_spec.channel_cfg.channel_id, rc);
 		goto unlock;
 	}
 
 	stm32_vref_enable_vrefsensor_channel(cfg->adc_base);
 #endif /* CONFIG_STM32_VREF_INJECTED */
 
-	rc = adc_read(cfg->adc, sp);
+	rc = adc_read_dt(&cfg->sensor_spec, sp);
 	if (rc == 0) {
 		data->raw = data->sample_buffer;
 	}
@@ -109,7 +105,7 @@ static int stm32_vref_sample_fetch(const struct device *dev, enum sensor_channel
 
 unlock:
 #endif /* CONFIG_STM32_VREF_INJECTED */
-	pm_device_runtime_put(cfg->adc);
+	pm_device_runtime_put(cfg->sensor_spec.dev);
 	k_mutex_unlock(&data->mutex);
 
 	return rc;
@@ -146,23 +142,27 @@ static int stm32_vref_init(const struct device *dev)
 	const struct stm32_vref_config *cfg = dev->config;
 	struct stm32_vref_data *data = dev->data;
 	struct adc_sequence *asp = &data->adc_seq;
+	uint32_t cal_shift;
+	int res;
 
 	k_mutex_init(&data->mutex);
 
-	if (!device_is_ready(cfg->adc)) {
-		LOG_ERR_DEVICE_NOT_READY(cfg->adc);
+	if (!adc_is_ready_dt(&cfg->sensor_spec)) {
+		LOG_ERR_DEVICE_NOT_READY(cfg->sensor_spec.dev);
 		return -ENODEV;
 	}
 
-	*asp = (struct adc_sequence){
-		.channels = BIT(cfg->adc_cfg.channel_id),
-		.buffer = &data->sample_buffer,
-		.buffer_size = sizeof(data->sample_buffer),
-		.resolution = MEAS_RES,
+	res = adc_sequence_init_dt(&cfg->sensor_spec, asp);
+	if (res != 0) {
+		LOG_ERR("Failed to initialize ADC sequence: %d", res);
+		return res;
+	}
+
+	asp->buffer = &data->sample_buffer;
+	asp->buffer_size = sizeof(data->sample_buffer);
 #ifdef CONFIG_STM32_VREF_INJECTED
-		.priority = 1,
+	asp->priority = 1;
 #endif /* CONFIG_STM32_VREF_INJECTED */
-	};
 
 /*
  * Read calibration data and compute numerator once during init.
@@ -189,10 +189,11 @@ static int stm32_vref_init(const struct device *dev)
 	}
 #endif /* CONFIG_STM32_VREF_READ_CALIB_VIA_NVMEM */
 
-	data->vrefint_cal_numerator = cfg->cal_mv * (vrefint_cal >> cfg->cal_shift);
+	cal_shift = cfg->cal_res - cfg->sensor_spec.resolution;
+	data->vrefint_cal_numerator = cfg->cal_mv * (vrefint_cal >> cal_shift);
 
 #ifdef CONFIG_STM32_VREF_INJECTED
-	int rc = adc_channel_setup(cfg->adc, &cfg->adc_cfg);
+	int rc = adc_channel_setup_dt(&cfg->sensor_spec);
 
 	if (rc != 0) {
 		LOG_DBG("Setup AIN%u got %d", cfg->adc_cfg.channel_id, rc);
@@ -235,22 +236,13 @@ BUILD_ASSERT(0,	"ADC '" DT_NODE_FULL_NAME(DT_INST_IO_CHANNELS_CTLR(0)) "' needed
 static struct stm32_vref_data stm32_vref_dev_data;
 
 static const struct stm32_vref_config stm32_vref_dev_config = {
-	.adc = DEVICE_DT_GET(DT_INST_IO_CHANNELS_CTLR(0)),
+	.sensor_spec = ADC_DT_SPEC_INST_GET(0),
 	.adc_base = (ADC_TypeDef *)DT_REG_ADDR(DT_INST_IO_CHANNELS_CTLR(0)),
-	.adc_cfg = {.gain = ADC_GAIN_1,
-		    .reference = ADC_REF_INTERNAL,
-		    .acquisition_time = ADC_ACQ_TIME_MAX,
-		    .channel_id = DT_INST_IO_CHANNELS_INPUT(0),
-		    .differential = 0},
 
 	.vrefint_cal = VREFINT_CAL_INIT(0),
 	.cal_mv = DT_INST_PROP(0, vrefint_cal_mv),
-	.cal_shift = (DT_INST_PROP(0, vrefint_cal_resolution) - MEAS_RES),
+	.cal_res = DT_INST_PROP(0, vrefint_cal_resolution),
 };
-
-/* Make sure no series with unsupported configuration can be added silently */
-BUILD_ASSERT(DT_INST_PROP(0, vrefint_cal_resolution) >= MEAS_RES,
-	"VREFINT calibration resolution is too low");
 
 SENSOR_DEVICE_DT_INST_DEFINE(0, stm32_vref_init, NULL, &stm32_vref_dev_data, &stm32_vref_dev_config,
 			     POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY, &stm32_vref_driver_api);

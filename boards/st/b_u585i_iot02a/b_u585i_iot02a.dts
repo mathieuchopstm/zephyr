@@ -114,3 +114,23 @@
 &rng {
 	status = "okay";
 };
+
+
+/ {
+	aliases {
+		volt-sensor0 = &vref1;
+
+	};
+};
+
+&adc12_common {
+	status = "okay";
+};
+
+&adc1 {
+	status = "okay";
+};
+
+&vref1 {
+	status = "okay";
+};

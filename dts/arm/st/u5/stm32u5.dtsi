@@ -779,8 +779,27 @@
 			adc1: adc@42028000 {
 				reg = <0x42028000 0x100>;
 				interrupts = <37 0>;
+				#address-cells = <1>;
+				#size-cells = <0>;
 				#io-channel-cells = <1>;
 				status = "disabled";
+
+				channel@0 {
+					reg = <0>;
+					zephyr,gain = "ADC_GAIN_1";
+					zephyr,reference = "ADC_REF_INTERNAL";
+					zephyr,acquisition-time = <ADC_ACQ_TIME_MAX>;
+					zephyr,resolution = <14>;
+
+					vref1: adc1-vref {
+						compatible = "st,stm32-vref";
+						nvmem-cells = <&vrefint_otp>;
+						vrefint-cal-mv = <3000>;
+						vrefint-cal-resolution = <14>;
+						io-channels = <&adc1 0>;
+						status = "disabled";
+					};
+				};
 			};
 		};
 
@@ -1111,15 +1130,6 @@
 		ts-cal-vrefanalog = <3000>;
 		ts-cal-resolution = <14>;
 		io-channels = <&adc1 19>;
-		status = "disabled";
-	};
-
-	vref1: vref_1 {
-		compatible = "st,stm32-vref";
-		nvmem-cells = <&vrefint_otp>;
-		vrefint-cal-mv = <3000>;
-		vrefint-cal-resolution = <14>;
-		io-channels = <&adc1 0>;
 		status = "disabled";
 	};
 
